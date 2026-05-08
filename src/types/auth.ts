@@ -1,0 +1,35 @@
+import type { APIEnvelope } from "@/types/api-response";
+
+export type AuthUserPublic = {
+  id: string;
+  username: string;
+  email: string;
+  emailVerified: boolean;
+  accountStatus: string;
+};
+
+export type AuthSessionPayload = {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  tokenType: "Bearer";
+  sessionId: string;
+  user: AuthUserPublic;
+};
+
+export type MeResponse = {
+  id: string;
+  username: string;
+  email: string;
+  emailVerified: boolean;
+  accountStatus: string;
+  lastLoginAt: string | null;
+  profile: {
+    fullName: string | null;
+    firstName: string | null;
+    lastName: string | null;
+  };
+  roles: string[];
+};
+
+export type ApiResult<T> = APIEnvelope<T>;
