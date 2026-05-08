@@ -1,13 +1,11 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import {
-  AuthShell,
-  Field,
-  LinkText,
-  PrimaryButton,
-  TextInput,
-} from "@/components/auth/auth-shell";
+import { AuthFooterLink, AuthShell } from "@/components/auth/auth-shell";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function LoginPage() {
@@ -27,38 +25,49 @@ export default function LoginPage() {
     >
       <form className="space-y-5" onSubmit={onSubmit}>
         {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-            {error}
-          </p>
+          <Alert variant="destructive">
+            <AlertTitle>Could not sign in</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : null}
-        <Field id="email" label="Email">
-          <TextInput
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(ev) => setEmail(ev.target.value)}
-          />
-        </Field>
-        <Field id="password" label="Password">
-          <TextInput
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(ev) => setPassword(ev.target.value)}
-          />
-        </Field>
-        <PrimaryButton disabled={loading}>{loading ? "Signing in…" : "Sign in"}</PrimaryButton>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldContent>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(ev) => setEmail(ev.target.value)}
+              />
+            </FieldContent>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <FieldContent>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(ev) => setPassword(ev.target.value)}
+              />
+            </FieldContent>
+          </Field>
+        </FieldGroup>
+        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          {loading ? "Signing in…" : "Sign in"}
+        </Button>
       </form>
-      <div className="mt-6 flex flex-col gap-3 text-center text-sm text-zinc-600 dark:text-zinc-400">
-        <LinkText href="/signup">Create an account</LinkText>
-        <LinkText href="/forgot-password">Forgot password?</LinkText>
-        <LinkText href="/verify-otp?purpose=login">Sign in with email code</LinkText>
+      <div className="flex flex-col gap-2 border-t pt-6 text-center text-sm text-muted-foreground">
+        <AuthFooterLink href="/signup">Create an account</AuthFooterLink>
+        <AuthFooterLink href="/forgot-password">Forgot password?</AuthFooterLink>
+        <AuthFooterLink href="/verify-otp?purpose=login">Sign in with email code</AuthFooterLink>
       </div>
     </AuthShell>
   );

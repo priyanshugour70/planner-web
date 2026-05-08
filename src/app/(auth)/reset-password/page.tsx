@@ -2,13 +2,11 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  AuthShell,
-  Field,
-  LinkText,
-  PrimaryButton,
-  TextInput,
-} from "@/components/auth/auth-shell";
+import { AuthFooterLink, AuthShell } from "@/components/auth/auth-shell";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import * as AuthApi from "@/services/auth.service";
 
 export default function ResetPasswordPage() {
@@ -44,45 +42,59 @@ export default function ResetPasswordPage() {
     >
       <form className="space-y-5" onSubmit={onSubmit}>
         {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-            {error}
-          </p>
+          <Alert variant="destructive">
+            <AlertTitle>Reset failed</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : null}
-        <Field id="email" label="Email">
-          <TextInput
-            id="email"
-            name="email"
-            type="email"
-            required
-            value={email}
-            onChange={(ev) => setEmail(ev.target.value)}
-          />
-        </Field>
-        <Field id="code" label="Reset code">
-          <TextInput
-            id="code"
-            name="code"
-            required
-            autoComplete="one-time-code"
-            value={code}
-            onChange={(ev) => setCode(ev.target.value)}
-          />
-        </Field>
-        <Field id="newPassword" label="New password">
-          <TextInput
-            id="newPassword"
-            name="newPassword"
-            type="password"
-            autoComplete="new-password"
-            required
-            value={newPassword}
-            onChange={(ev) => setNewPassword(ev.target.value)}
-          />
-        </Field>
-        <PrimaryButton disabled={loading}>{loading ? "Saving…" : "Update password"}</PrimaryButton>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldContent>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={email}
+                onChange={(ev) => setEmail(ev.target.value)}
+              />
+            </FieldContent>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="code">Reset code</FieldLabel>
+            <FieldContent>
+              <Input
+                id="code"
+                name="code"
+                required
+                autoComplete="one-time-code"
+                value={code}
+                onChange={(ev) => setCode(ev.target.value)}
+              />
+            </FieldContent>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="newPassword">New password</FieldLabel>
+            <FieldContent>
+              <Input
+                id="newPassword"
+                name="newPassword"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={newPassword}
+                onChange={(ev) => setNewPassword(ev.target.value)}
+              />
+            </FieldContent>
+          </Field>
+        </FieldGroup>
+        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          {loading ? "Saving…" : "Update password"}
+        </Button>
       </form>
-      <p className="mt-6 text-center text-sm">
-        <LinkText href="/login">Back to sign in</LinkText>
+      <p className="border-t pt-6 text-center text-sm">
+        <AuthFooterLink href="/login">Back to sign in</AuthFooterLink>
       </p>
     </AuthShell>
   );

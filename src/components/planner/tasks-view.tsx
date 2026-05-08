@@ -1,6 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import * as Planner from "@/services/planner.service";
 import type { TaskDTO } from "@/types/planner";
 
@@ -47,70 +68,119 @@ export function TasksView() {
     if (res.success) await load();
   }
 
-  if (loading) return <p className="text-sm text-zinc-500">Loading tasks…</p>;
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <Skeleton className="h-9 w-32" />
+        <Skeleton className="h-4 max-w-md" />
+        <Skeleton className="h-24 rounded-xl" />
+        <Skeleton className="h-64 rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Tasks</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-muted-foreground">
           Capture work, filter by status, and complete items in one place.
         </p>
       </header>
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm text-zinc-600 dark:text-zinc-400">Status</label>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="rounded-lg border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-900"
-        >
-          <option value="">All</option>
-          <option value="todo">Todo</option>
-          <option value="in_progress">In progress</option>
-          <option value="done">Done</option>
-        </select>
+
+      <div className="flex flex-wrap items-end gap-4">
+        <Field className="min-w-[12rem] max-w-xs">
+          <FieldLabel>Status</FieldLabel>
+          <FieldContent>
+            <Select
+              value={filter === "" ? "all" : filter}
+              onValueChange={(v) => setFilter(v == null || v === "all" ? "" : v)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filter" />
+              </SelectTrigger>
+              <SelectContent align="start" sideOffset={4}>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="todo">Todo</SelectItem>
+                <SelectItem value="in_progress">In progress</SelectItem>
+                <SelectItem value="done">Done</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldContent>
+        </Field>
       </div>
-      <form onSubmit={addTask} className="flex flex-wrap gap-2 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="New task…"
-          className="min-w-[200px] flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-950"
-        />
-        <button type="submit" className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white dark:bg-zinc-100 dark:text-zinc-900">
-          Add
-        </button>
-      </form>
-      <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
-        {tasks.map((t) => (
-          <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => void markDone(t)}
-                className={`flex h-5 w-5 items-center justify-center rounded border text-xs ${
-                  t.status === "done"
-                    ? "border-emerald-500 bg-emerald-500 text-white"
-                    : "border-zinc-400"
-                }`}
-              >
-                {t.status === "done" ? "✓" : ""}
-              </button>
-              <div>
-                <p className={t.status === "done" ? "text-zinc-400 line-through" : "font-medium"}>{t.title}</p>
-                <p className="text-xs text-zinc-500">
-                  {t.status}
-                  {t.dueAt ? ` · due ${new Date(t.dueAt).toLocaleString()}` : ""}
-                </p>
-              </div>
-            </div>
-            <button type="button" onClick={() => void remove(t.id)} className="text-xs text-red-600 dark:text-red-400">
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
-      {tasks.length === 0 && <p className="text-sm text-zinc-500">No tasks in this view.</p>}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Add task</CardTitle>
+          <CardDescription>Creates a new item with status “todo”.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={addTask} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <Field className="min-w-0 flex-1">
+              <FieldLabel htmlFor="new-task">Title</FieldLabel>
+              <FieldContent>
+                <Input
+                  id="new-task"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="New task…"
+                />
+              </FieldContent>
+            </Field>
+            <Button type="submit" className="shrink-0">
+              Add
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12" />
+                <TableHead>Task</TableHead>
+                <TableHead className="hidden sm:table-cell">Status</TableHead>
+                <TableHead className="w-24 text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tasks.map((t) => (
+                <TableRow key={t.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={t.status === "done"}
+                      onCheckedChange={() => void markDone(t)}
+                      aria-label={t.status === "done" ? "Mark as todo" : "Mark as done"}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <p className={t.status === "done" ? "text-muted-foreground line-through" : "font-medium"}>
+                      {t.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground sm:hidden">{t.status}</p>
+                    {t.dueAt ? (
+                      <p className="text-xs text-muted-foreground">Due {new Date(t.dueAt).toLocaleString()}</p>
+                    ) : null}
+                  </TableCell>
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">{t.status}</TableCell>
+                  <TableCell className="text-right">
+                    <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void remove(t.id)}>
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {tasks.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No tasks in this view.</p>
+      ) : null}
     </div>
   );
 }

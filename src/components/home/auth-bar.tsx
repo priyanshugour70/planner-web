@@ -1,12 +1,26 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
+import { ChevronDownIcon } from "lucide-react";
 
-/** Same tree on server + first client paint; avoids mismatch (persisted session only exists on client). */
 export function AuthBar() {
   const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated, signOut } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -16,54 +30,52 @@ export function AuthBar() {
 
   if (!mounted) {
     return (
-      <div
-        className="flex h-9 min-w-[220px] items-center justify-end gap-3"
-        aria-busy="true"
-        aria-label="Account"
-      >
-        <span className="h-4 w-14 rounded bg-zinc-200 dark:bg-zinc-800" />
-        <span className="h-4 w-16 rounded bg-zinc-200 dark:bg-zinc-800" />
-        <span className="h-4 w-16 rounded bg-zinc-200 dark:bg-zinc-800" />
+      <div className="flex h-9 min-w-[200px] items-center justify-end gap-2" aria-busy="true" aria-label="Account">
+        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-8 w-24" />
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-wrap gap-3 text-sm font-medium">
-        <a className="text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-50" href="/login">
+      <div className="flex flex-wrap items-center justify-end gap-1">
+        <Link href="/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
           Sign in
-        </a>
-        <a className="text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-50" href="/signup">
+        </Link>
+        <Link href="/signup" className={cn(buttonVariants({ variant: "default", size: "sm" }))}>
           Sign up
-        </a>
-        <a className="text-zinc-600 hover:underline dark:text-zinc-400" href="/api-docs">
+        </Link>
+        <Link href="/api-docs" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
           API docs
-        </a>
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-2 text-sm text-zinc-700 dark:text-zinc-300 sm:flex-row sm:items-center sm:justify-between">
-      <span>
-        Signed in as <span className="font-semibold text-zinc-900 dark:text-zinc-50">{user?.email}</span>
-      </span>
-      <div className="flex flex-wrap gap-3 font-medium">
-        <a className="text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-50" href="/dashboard">
-          Dashboard
-        </a>
-        <button
-          type="button"
-          className="text-left text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-50"
-          onClick={() => void signOut()}
-        >
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={cn(
+          buttonVariants({ variant: "outline", size: "sm" }),
+          "gap-1.5 font-normal"
+        )}
+      >
+        <span className="max-w-[160px] truncate">{user?.email}</span>
+        <ChevronDownIcon className="size-4 opacity-60" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={6} className="min-w-56">
+        <DropdownMenuLabel className="flex flex-col gap-0.5 px-2 py-1.5 font-normal">
+          <span className="text-xs font-medium text-muted-foreground">Signed in</span>
+          <span className="truncate text-sm text-foreground">{user?.email}</span>
+        </DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => router.push("/dashboard")}>Dashboard</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push("/api-docs")}>API docs</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onClick={() => void signOut()}>
           Sign out
-        </button>
-        <a className="text-zinc-600 hover:underline dark:text-zinc-400" href="/api-docs">
-          API docs
-        </a>
-      </div>
-    </div>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

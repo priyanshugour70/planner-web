@@ -2,8 +2,19 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import * as Planner from "@/services/planner.service";
 import type { PlannerSummaryDTO } from "@/types/planner";
+import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/goals", label: "Goals", key: "goals" as const },
@@ -25,47 +36,76 @@ export function OverviewView() {
     })();
   }, []);
 
-  if (!s) return <p className="text-sm text-zinc-500">Loading overview…</p>;
+  if (!s) {
+    return (
+      <div className="space-y-8">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-4 max-w-xl" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-muted-foreground">
           Counts across your workspace. Open any module from the sidebar or below.
         </p>
       </header>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Tasks done</p>
-          <p className="mt-2 text-3xl font-semibold">
-            {s.tasksDone}
-            <span className="text-lg font-normal text-zinc-400">/{s.tasks}</span>
-          </p>
-        </div>
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Income vs expense</p>
-          <p className="mt-2 text-sm text-emerald-600">+{s.totalIncome}</p>
-          <p className="text-sm text-red-600">−{s.totalExpense}</p>
-        </div>
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Goals</p>
-          <p className="mt-2 text-3xl font-semibold">{s.goals}</p>
-        </div>
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Habits</p>
-          <p className="mt-2 text-3xl font-semibold">{s.habits}</p>
-        </div>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Tasks done</CardDescription>
+            <CardTitle className="text-3xl tabular-nums">
+              {s.tasksDone}
+              <span className="text-lg font-normal text-muted-foreground">/{s.tasks}</span>
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Income vs expense</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">+{s.totalIncome}</p>
+            <p className="text-sm font-medium text-destructive">−{s.totalExpense}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Goals</CardDescription>
+            <CardTitle className="text-3xl tabular-nums">{s.goals}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Habits</CardDescription>
+            <CardTitle className="text-3xl tabular-nums">{s.habits}</CardTitle>
+          </CardHeader>
+        </Card>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {links.map((l) => (
           <Link
             key={l.href}
             href={l.href}
-            className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium transition hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600"
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "h-auto justify-between gap-3 py-4 font-medium"
+            )}
           >
-            {l.label}
-            <span className="text-zinc-400">{s[l.key]}</span>
+            <span>{l.label}</span>
+            <Badge variant="secondary" className="tabular-nums">
+              {s[l.key]}
+            </Badge>
           </Link>
         ))}
       </div>

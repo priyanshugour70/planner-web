@@ -1,13 +1,11 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import {
-  AuthShell,
-  Field,
-  LinkText,
-  PrimaryButton,
-  TextInput,
-} from "@/components/auth/auth-shell";
+import { AuthFooterLink, AuthShell } from "@/components/auth/auth-shell";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import * as AuthApi from "@/services/auth.service";
 
 export default function ForgotPasswordPage() {
@@ -42,34 +40,41 @@ export default function ForgotPasswordPage() {
     >
       <form className="space-y-5" onSubmit={onSubmit}>
         {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-            {error}
-          </p>
+          <Alert variant="destructive">
+            <AlertTitle>Request failed</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : null}
         {message ? (
-          <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
-            {message}
-          </p>
+          <Alert>
+            <AlertTitle>Check your inbox</AlertTitle>
+            <AlertDescription>{message}</AlertDescription>
+          </Alert>
         ) : null}
-        <Field id="email" label="Email">
-          <TextInput
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(ev) => setEmail(ev.target.value)}
-          />
-        </Field>
-        <PrimaryButton disabled={loading}>{loading ? "Sending…" : "Send reset code"}</PrimaryButton>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldContent>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(ev) => setEmail(ev.target.value)}
+              />
+            </FieldContent>
+          </Field>
+        </FieldGroup>
+        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          {loading ? "Sending…" : "Send reset code"}
+        </Button>
       </form>
-      <p className="mt-6 text-center text-sm">
-        <LinkText href="/reset-password">I already have a code</LinkText>
-      </p>
-      <p className="mt-2 text-center text-sm">
-        <LinkText href="/login">Back to sign in</LinkText>
-      </p>
+      <div className="flex flex-col gap-2 border-t pt-6 text-center text-sm">
+        <AuthFooterLink href="/reset-password">I already have a code</AuthFooterLink>
+        <AuthFooterLink href="/login">Back to sign in</AuthFooterLink>
+      </div>
     </AuthShell>
   );
 }

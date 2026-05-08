@@ -1,13 +1,11 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import {
-  AuthShell,
-  Field,
-  LinkText,
-  PrimaryButton,
-  TextInput,
-} from "@/components/auth/auth-shell";
+import { AuthFooterLink, AuthShell } from "@/components/auth/auth-shell";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function SignupPage() {
@@ -29,55 +27,72 @@ export default function SignupPage() {
     >
       <form className="space-y-5" onSubmit={onSubmit}>
         {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-            {error}
-          </p>
+          <Alert variant="destructive">
+            <AlertTitle>Signup failed</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : null}
-        <Field id="username" label="Username">
-          <TextInput
-            id="username"
-            name="username"
-            autoComplete="username"
-            required
-            value={username}
-            onChange={(ev) => setUsername(ev.target.value)}
-          />
-        </Field>
-        <Field id="email" label="Email">
-          <TextInput
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(ev) => setEmail(ev.target.value)}
-          />
-        </Field>
-        <Field id="fullName" label="Full name (optional)">
-          <TextInput
-            id="fullName"
-            name="fullName"
-            autoComplete="name"
-            value={fullName}
-            onChange={(ev) => setFullName(ev.target.value)}
-          />
-        </Field>
-        <Field id="password" label="Password">
-          <TextInput
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            value={password}
-            onChange={(ev) => setPassword(ev.target.value)}
-          />
-        </Field>
-        <PrimaryButton disabled={loading}>{loading ? "Creating…" : "Create account"}</PrimaryButton>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="username">Username</FieldLabel>
+            <FieldContent>
+              <Input
+                id="username"
+                name="username"
+                autoComplete="username"
+                required
+                value={username}
+                onChange={(ev) => setUsername(ev.target.value)}
+              />
+            </FieldContent>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldContent>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(ev) => setEmail(ev.target.value)}
+              />
+            </FieldContent>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="fullName">Full name (optional)</FieldLabel>
+            <FieldContent>
+              <Input
+                id="fullName"
+                name="fullName"
+                autoComplete="name"
+                value={fullName}
+                onChange={(ev) => setFullName(ev.target.value)}
+              />
+            </FieldContent>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <FieldContent>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={password}
+                onChange={(ev) => setPassword(ev.target.value)}
+              />
+            </FieldContent>
+          </Field>
+        </FieldGroup>
+        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          {loading ? "Creating…" : "Create account"}
+        </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
-        Already have an account? <LinkText href="/login">Sign in</LinkText>
+      <p className="border-t pt-6 text-center text-sm text-muted-foreground">
+        Already have an account? <AuthFooterLink href="/login">Sign in</AuthFooterLink>
       </p>
     </AuthShell>
   );

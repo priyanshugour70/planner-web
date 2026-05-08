@@ -2,13 +2,11 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  AuthShell,
-  Field,
-  LinkText,
-  PrimaryButton,
-  TextInput,
-} from "@/components/auth/auth-shell";
+import { AuthFooterLink, AuthShell } from "@/components/auth/auth-shell";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import * as AuthApi from "@/services/auth.service";
 import { useAuthStore } from "@/store/auth-store";
 
@@ -74,7 +72,7 @@ export default function VerifyOtpPage() {
           refreshToken: res.data.refreshToken,
           user: res.data.user,
         });
-        router.push("/");
+        router.push("/dashboard");
         return;
       }
       setInfo("Verified.");
@@ -92,50 +90,63 @@ export default function VerifyOtpPage() {
     >
       <form className="space-y-5" onSubmit={verify}>
         {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-            {error}
-          </p>
+          <Alert variant="destructive">
+            <AlertTitle>Verification</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : null}
         {info ? (
-          <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
-            {info}
-          </p>
+          <Alert>
+            <AlertTitle>Update</AlertTitle>
+            <AlertDescription>{info}</AlertDescription>
+          </Alert>
         ) : null}
-        <Field id="email" label="Email">
-          <TextInput
-            id="email"
-            name="email"
-            type="email"
-            required
-            value={email}
-            onChange={(ev) => setEmail(ev.target.value)}
-          />
-        </Field>
-        <div className="flex gap-2">
-          <PrimaryButton
-            className="flex-1"
-            type="button"
-            disabled={sending || !email}
-            onClick={() => void send()}
-          >
-            {sending ? "Sending…" : "Send code"}
-          </PrimaryButton>
-        </div>
-        <Field id="code" label="One-time code">
-          <TextInput
-            id="code"
-            name="code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            required
-            value={code}
-            onChange={(ev) => setCode(ev.target.value)}
-          />
-        </Field>
-        <PrimaryButton disabled={loading}>{loading ? "Verifying…" : "Verify and continue"}</PrimaryButton>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldContent>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={email}
+                onChange={(ev) => setEmail(ev.target.value)}
+              />
+            </FieldContent>
+          </Field>
+        </FieldGroup>
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full"
+          disabled={sending || !email}
+          onClick={() => void send()}
+        >
+          {sending ? "Sending…" : "Send code"}
+        </Button>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="code">One-time code</FieldLabel>
+            <FieldContent>
+              <Input
+                id="code"
+                name="code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required
+                value={code}
+                onChange={(ev) => setCode(ev.target.value)}
+              />
+            </FieldContent>
+          </Field>
+        </FieldGroup>
+        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          {loading ? "Verifying…" : "Verify and continue"}
+        </Button>
       </form>
-      <p className="mt-6 text-center text-sm">
-        <LinkText href="/login">Password sign in</LinkText>
+      <p className="border-t pt-6 text-center text-sm">
+        <AuthFooterLink href="/login">Password sign in</AuthFooterLink>
       </p>
     </AuthShell>
   );

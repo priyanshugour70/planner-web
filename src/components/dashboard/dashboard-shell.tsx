@@ -1,10 +1,23 @@
 "use client";
 
+import { MenuIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthStore } from "@/store/auth-store";
+import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/dashboard", label: "Overview" },
@@ -17,22 +30,97 @@ const nav = [
   { href: "/calendar", label: "Calendar" },
 ] as const;
 
+type PersistApi = {
+  hasHydrated: () => boolean;
+  onFinishHydration: (fn: () => void) => () => void;
+};
+
 /** On SSR/prerender, `localStorage` may be missing — persist middleware skips `api.persist` entirely. */
-function authPersistApi() {
-  return useAuthStore.persist as
-    | undefined
-    | {
-        hasHydrated: () => boolean;
-        onFinishHydration: (fn: () => void) => () => void;
-      };
+function authPersistApi(): PersistApi | undefined {
+  const p = (useAuthStore as unknown as { persist?: PersistApi }).persist;
+  return p;
+}
+
+function NavLinks({
+  pathname,
+  onNavigate,
+  className,
+}: {
+  pathname: string | null;
+  onNavigate?: () => void;
+  className?: string;
+}) {
+  return (
+    <nav className={cn("flex flex-col gap-0.5 p-2", className)}>
+      {nav.map((item) => {
+        const active =
+          item.href === "/dashboard"
+            ? pathname === "/dashboard"
+            : pathname === item.href || pathname?.startsWith(`${item.href}/`);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onNavigate}
+            className={cn(
+              buttonVariants({ variant: active ? "secondary" : "ghost", size: "default" }),
+              "w-full justify-start font-medium"
+            )}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+function SidebarFooter({ onNavigate }: { onNavigate?: () => void }) {
+  const { signOut } = useAuth();
+  return (
+    <div className="border-t p-2">
+      <Link
+        href="/"
+        onClick={onNavigate}
+        className={cn(
+          buttonVariants({ variant: "ghost", size: "default" }),
+          "mb-1 w-full justify-start text-muted-foreground"
+        )}
+      >
+        Home
+      </Link>
+      <Button
+        type="button"
+        variant="ghost"
+        className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
+        onClick={() => {
+          onNavigate?.();
+          void signOut();
+        }}
+      >
+        Sign out
+      </Button>
+    </div>
+  );
+}
+
+function BrandBlock() {
+  return (
+    <div className="border-b px-4 py-5">
+      <Link href="/dashboard" className="text-lg font-semibold tracking-tight">
+        Planner
+      </Link>
+      <p className="mt-1 text-xs text-muted-foreground">End-to-end life OS</p>
+    </div>
+  );
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, signOut, loadProfile } = useAuth();
+  const { isAuthenticated, loadProfile } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  /** Start false: same server + client first paint; never touch `persist` in useState (can be undefined on SSR). */
   const [persistReady, setPersistReady] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const p = authPersistApi();
@@ -67,69 +155,62 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   if (!persistReady) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 text-zinc-600 dark:bg-black dark:text-zinc-400">
-        Restoring session…
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-4">
+        <Skeleton className="h-8 w-48" />
+        <p className="text-sm text-muted-foreground">Restoring session…</p>
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 text-zinc-600 dark:bg-black dark:text-zinc-400">
-        Redirecting to sign in…
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-4">
+        <Skeleton className="h-8 w-40" />
+        <p className="text-sm text-muted-foreground">Redirecting to sign in…</p>
       </div>
     );
   }
 
+  const closeMobile = () => setMobileNavOpen(false);
+
   return (
-    <div className="flex min-h-screen bg-zinc-100 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="border-b border-zinc-200 px-4 py-5 dark:border-zinc-800">
-          <Link href="/dashboard" className="text-lg font-semibold tracking-tight">
-            Planner
-          </Link>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">End-to-end life OS</p>
-        </div>
-        <nav className="flex flex-1 flex-col gap-0.5 p-2">
-          {nav.map((item) => {
-            const active =
-              item.href === "/dashboard"
-                ? pathname === "/dashboard"
-                : pathname === item.href || pathname.startsWith(`${item.href}/`);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                    : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="border-t border-zinc-200 p-2 dark:border-zinc-800">
-          <Link
-            href="/"
-            className="mb-1 block rounded-lg px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          >
-            Home
-          </Link>
-          <button
-            type="button"
-            onClick={() => void signOut()}
-            className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
-          >
-            Sign out
-          </button>
-        </div>
+    <div className="flex min-h-screen bg-background text-foreground">
+      <aside className="hidden min-h-screen w-56 shrink-0 flex-col border-r bg-card md:flex">
+        <BrandBlock />
+        <ScrollArea className="min-h-0 flex-1">
+          <NavLinks pathname={pathname} />
+        </ScrollArea>
+        <SidebarFooter />
       </aside>
-      <main className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
-      </main>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
+          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+            <SheetTrigger
+              type="button"
+              aria-label="Open menu"
+              className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
+            >
+              <MenuIcon className="size-5" />
+            </SheetTrigger>
+            <SheetContent side="left" className="flex w-[min(100%,20rem)] flex-col gap-0 p-0">
+              <SheetHeader className="border-b px-4 py-4 text-left">
+                <SheetTitle className="font-semibold">Planner</SheetTitle>
+              </SheetHeader>
+              <ScrollArea className="min-h-0 flex-1">
+                <NavLinks pathname={pathname} onNavigate={closeMobile} className="pt-2" />
+              </ScrollArea>
+              <Separator />
+              <SidebarFooter onNavigate={closeMobile} />
+            </SheetContent>
+          </Sheet>
+          <span className="truncate text-sm font-medium">Menu</span>
+        </header>
+
+        <main className="flex-1 overflow-auto">
+          <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }
