@@ -17,21 +17,38 @@ const nav = [
   { href: "/calendar", label: "Calendar" },
 ] as const;
 
+/** On SSR/prerender, `localStorage` may be missing — persist middleware skips `api.persist` entirely. */
+function authPersistApi() {
+  return useAuthStore.persist as
+    | undefined
+    | {
+        hasHydrated: () => boolean;
+        onFinishHydration: (fn: () => void) => () => void;
+      };
+}
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, signOut, loadProfile } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  /** Persist reads localStorage async; until then tokens are null — do not redirect yet. */
-  const [persistReady, setPersistReady] = useState(() => useAuthStore.persist.hasHydrated());
+  /** Start false: same server + client first paint; never touch `persist` in useState (can be undefined on SSR). */
+  const [persistReady, setPersistReady] = useState(false);
 
   useEffect(() => {
-    if (useAuthStore.persist.hasHydrated()) {
+    const p = authPersistApi();
+    if (!p) {
       queueMicrotask(() => {
         setPersistReady(true);
       });
       return;
     }
-    const unsub = useAuthStore.persist.onFinishHydration(() => {
+    if (p.hasHydrated()) {
+      queueMicrotask(() => {
+        setPersistReady(true);
+      });
+      return;
+    }
+    const unsub = p.onFinishHydration(() => {
       queueMicrotask(() => {
         setPersistReady(true);
       });
