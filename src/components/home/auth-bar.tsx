@@ -27,6 +27,9 @@ export function AuthBar() {
         Signed in as <span className="font-semibold text-zinc-900 dark:text-zinc-50">{user?.email}</span>
       </span>
       <div className="flex flex-wrap gap-3 font-medium">
+        <a className="text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-50" href="/dashboard">
+          Dashboard
+        </a>
         <button
           type="button"
           className="text-left text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-50"

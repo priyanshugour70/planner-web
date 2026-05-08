@@ -42,7 +42,7 @@ export function useAuth() {
           return false;
         }
         applySession(res.data);
-        router.push("/");
+        router.push("/dashboard");
         return true;
       } catch (e) {
         setError(e instanceof Error ? e.message : "Login failed");
@@ -65,7 +65,7 @@ export function useAuth() {
           return false;
         }
         applySession(res.data);
-        router.push("/");
+        router.push("/dashboard");
         return true;
       } catch (e) {
         setError(e instanceof Error ? e.message : "Signup failed");
