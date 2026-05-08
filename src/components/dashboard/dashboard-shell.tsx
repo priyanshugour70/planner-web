@@ -26,13 +26,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (useAuthStore.persist.hasHydrated()) {
-      setPersistReady(true);
+      queueMicrotask(() => {
+        setPersistReady(true);
+      });
       return;
     }
-    const done = useAuthStore.persist.onFinishHydration(() => {
-      setPersistReady(true);
+    const unsub = useAuthStore.persist.onFinishHydration(() => {
+      queueMicrotask(() => {
+        setPersistReady(true);
+      });
     });
-    return done;
+    return unsub;
   }, []);
 
   useEffect(() => {

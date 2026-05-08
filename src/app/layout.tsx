@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Planner",
-  description: "Planner enterprise web client",
+  title: "Planner — goals, tasks, finance, habits, journal, notes & calendar",
+  description:
+    "A structured workspace with secure auth, PostgreSQL-backed modules, and REST APIs. Plan goals, ship tasks, track money, build habits, journal, take notes, and live on a calendar.",
 };
 
 export default function RootLayout({
@@ -26,8 +27,11 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }

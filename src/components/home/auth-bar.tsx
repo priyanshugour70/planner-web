@@ -1,9 +1,32 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 
+/** Same tree on server + first client paint; avoids mismatch (persisted session only exists on client). */
 export function AuthBar() {
+  const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated, signOut } = useAuth();
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setMounted(true);
+    });
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div
+        className="flex h-9 min-w-[220px] items-center justify-end gap-3"
+        aria-busy="true"
+        aria-label="Account"
+      >
+        <span className="h-4 w-14 rounded bg-zinc-200 dark:bg-zinc-800" />
+        <span className="h-4 w-16 rounded bg-zinc-200 dark:bg-zinc-800" />
+        <span className="h-4 w-16 rounded bg-zinc-200 dark:bg-zinc-800" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
