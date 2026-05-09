@@ -1,6 +1,7 @@
 import "server-only";
 import { getSql } from "@/lib/db";
-import type { FinanceSummaryDTO } from "@/types/planner";
+import { isoDate } from "@/modules/shared/server/serialize-helpers";
+import type { BudgetRollupDTO, FinanceSummaryDTO } from "@/types/planner";
 
 /**
  * Aggregated finance intelligence for overview + finance home.
@@ -62,4 +63,55 @@ export async function computeFinanceSummary(userId: bigint): Promise<FinanceSumm
     upcomingDebtDue7d: dueSoon?.c ?? 0,
     budgetCount: budgets?.c ?? 0,
   };
+}
+
+/** Expense totals per budget within each budget's own period window. */
+export async function computeBudgetRollups(userId: bigint): Promise<BudgetRollupDTO[]> {
+  const sql = getSql();
+  const rows = await sql<
+    {
+      id: bigint;
+      name: string;
+      category: string | null;
+      amount_limit: string;
+      period_start: Date;
+      period_end: Date;
+      spent: string;
+    }[]
+  >`
+    SELECT
+      b.id,
+      b.name,
+      b.category,
+      b.amount_limit::text,
+      b.period_start,
+      b.period_end,
+      COALESCE(
+        SUM(
+          CASE
+            WHEN t.kind = 'expense'::finance_tx_kind THEN t.amount
+            ELSE 0::numeric
+          END
+        ),
+        0
+      )::text AS spent
+    FROM budgets b
+    LEFT JOIN transactions t
+      ON t.budget_id = b.id
+      AND t.user_id = b.user_id
+      AND t.occurred_on >= b.period_start
+      AND t.occurred_on <= b.period_end
+    WHERE b.user_id = ${userId}
+    GROUP BY b.id, b.name, b.category, b.amount_limit, b.period_start, b.period_end
+    ORDER BY b.period_start DESC, b.id DESC
+  `;
+  return rows.map((r) => ({
+    budgetId: String(r.id),
+    name: r.name,
+    category: r.category,
+    amountLimit: r.amount_limit,
+    spent: r.spent,
+    periodStart: isoDate(r.period_start),
+    periodEnd: isoDate(r.period_end),
+  }));
 }

@@ -128,3 +128,14 @@
     @apply font-sans;
   }
 }
+
+/* Hide scrollbars app-wide while preserving scroll (wheel, trackpad, touch). */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}

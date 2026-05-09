@@ -63,3 +63,95 @@ export function serializeTransaction(r: TransactionRow) {
     categoryId: r.category_id != null ? String(r.category_id) : null,
   };
 }
+
+export interface FinanceAccountRow {
+  id: bigint;
+  user_id: bigint;
+  name: string;
+  kind: string;
+  currency: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface FinanceCategoryRow {
+  id: bigint;
+  user_id: bigint;
+  name: string;
+  kind: string;
+  parent_id: bigint | null;
+  created_at: Date;
+}
+
+export interface DebtObligationRow {
+  id: bigint;
+  user_id: bigint;
+  counterparty: string;
+  direction: string;
+  principal: string;
+  balance: string;
+  currency: string;
+  due_date: Date | null;
+  status: string;
+  notes: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface DebtPaymentRow {
+  id: bigint;
+  obligation_id: bigint;
+  amount: string;
+  paid_at: Date;
+  note: string | null;
+}
+
+export function serializeFinanceAccount(r: FinanceAccountRow) {
+  return {
+    id: String(r.id),
+    userId: String(r.user_id),
+    name: r.name,
+    kind: r.kind,
+    currency: r.currency,
+    createdAt: iso(r.created_at),
+    updatedAt: iso(r.updated_at),
+  };
+}
+
+export function serializeFinanceCategory(r: FinanceCategoryRow) {
+  return {
+    id: String(r.id),
+    userId: String(r.user_id),
+    name: r.name,
+    kind: r.kind,
+    parentId: r.parent_id != null ? String(r.parent_id) : null,
+    createdAt: iso(r.created_at),
+  };
+}
+
+export function serializeDebtObligation(r: DebtObligationRow) {
+  return {
+    id: String(r.id),
+    userId: String(r.user_id),
+    counterparty: r.counterparty,
+    direction: r.direction,
+    principal: r.principal,
+    balance: r.balance,
+    currency: r.currency,
+    dueDate: r.due_date ? isoDate(r.due_date) : null,
+    status: r.status,
+    notes: r.notes,
+    createdAt: iso(r.created_at),
+    updatedAt: iso(r.updated_at),
+  };
+}
+
+export function serializeDebtPayment(r: DebtPaymentRow) {
+  return {
+    id: String(r.id),
+    obligationId: String(r.obligation_id),
+    amount: r.amount,
+    paidAt: iso(r.paid_at),
+    note: r.note,
+  };
+}

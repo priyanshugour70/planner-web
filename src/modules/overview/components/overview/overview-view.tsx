@@ -13,6 +13,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOverviewDashboard } from "@/modules/overview/hooks/use-overview-dashboard";
 import { cn } from "@/lib/utils";
+import { formatInrAmount } from "@/lib/format-inr";
 import { PRODUCT_NAME } from "@/lib/product";
 
 const links = [
@@ -76,8 +77,8 @@ export function OverviewView() {
             <CardDescription>Income vs expense</CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
-            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">+{s.totalIncome}</p>
-            <p className="text-sm font-medium text-destructive">−{s.totalExpense}</p>
+            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">+{formatInrAmount(s.totalIncome)}</p>
+            <p className="text-sm font-medium text-destructive">−{formatInrAmount(s.totalExpense)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -102,16 +103,16 @@ export function OverviewView() {
           <CardContent className="flex flex-wrap gap-6 text-sm">
             <div>
               <span className="text-muted-foreground">MTD spend</span>
-              <p className="font-semibold text-destructive">−{fin.monthSpend}</p>
+              <p className="font-semibold text-destructive">−{formatInrAmount(fin.monthSpend)}</p>
             </div>
             <div>
               <span className="text-muted-foreground">MTD income</span>
-              <p className="font-semibold text-emerald-600 dark:text-emerald-400">+{fin.monthIncome}</p>
+              <p className="font-semibold text-emerald-600 dark:text-emerald-400">+{formatInrAmount(fin.monthIncome)}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Open debt</span>
               <p className="font-semibold">{fin.openDebtCount}</p>
-              <p className="text-xs text-muted-foreground">Exposure {fin.openDebtExposure}</p>
+              <p className="text-xs text-muted-foreground">Exposure {formatInrAmount(fin.openDebtExposure)}</p>
             </div>
             <Link href="/finance" className={cn(buttonVariants({ variant: "link", size: "sm" }), "h-auto self-center p-0")}>
               Open finance →

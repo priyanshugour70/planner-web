@@ -141,4 +141,38 @@ export const plannerOpenApiPaths: Record<string, Record<string, unknown>> = {
     patch: secured("Update budget", { parameters: [idParam] }),
     delete: secured("Delete budget", { parameters: [idParam] }),
   },
+  "/planner/finance/budget-rollup": {
+    get: secured("Per-budget spend vs limit for each budget period"),
+  },
+  "/planner/finance/accounts": {
+    get: secured("List finance accounts (cash, bank, card, …)"),
+    post: secured("Create finance account"),
+  },
+  "/planner/finance/accounts/{id}": {
+    get: secured("Get finance account", { parameters: [idParam] }),
+    patch: secured("Update finance account", { parameters: [idParam] }),
+    delete: secured("Delete finance account", { parameters: [idParam] }),
+  },
+  "/planner/finance/categories": {
+    get: secured("List finance categories"),
+    post: secured("Create finance category"),
+  },
+  "/planner/finance/categories/{id}": {
+    get: secured("Get finance category", { parameters: [idParam] }),
+    patch: secured("Update finance category", { parameters: [idParam] }),
+    delete: secured("Delete finance category", { parameters: [idParam] }),
+  },
+  "/planner/debt/obligations": {
+    get: secured("List debt obligations"),
+    post: secured("Create debt obligation"),
+  },
+  "/planner/debt/obligations/{id}": {
+    get: secured("Get debt obligation", { parameters: [idParam] }),
+    patch: secured("Update debt obligation", { parameters: [idParam] }),
+    delete: secured("Delete debt obligation", { parameters: [idParam] }),
+  },
+  "/planner/debt/obligations/{id}/payments": {
+    get: secured("List payments for an obligation", { parameters: [idParam] }),
+    post: secured("Record a payment (reduces balance)", { parameters: [idParam] }),
+  },
 };

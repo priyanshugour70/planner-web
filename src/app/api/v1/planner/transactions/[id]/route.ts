@@ -3,6 +3,7 @@ import { getSql } from "@/lib/db";
 import * as Auth from "@/modules/auth/server/auth-service";
 import { HttpError } from "@/modules/auth/server/http-error";
 import { bigIntPathId } from "@/modules/shared/server/path-ids";
+import { requireFinanceAccount, requireFinanceCategory } from "@/modules/finance/server/guards";
 import { parseAmount, transactionPatchSchema } from "@/modules/finance/server/schemas";
 import { serializeTransaction, type TransactionRow } from "@/modules/finance/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
@@ -45,12 +46,36 @@ export const PATCH = withApiRoute(
       }
     }
 
+    let accountId = existing.account_id ?? null;
+    if (body.accountId !== undefined) {
+      if (body.accountId === null) accountId = null;
+      else {
+        accountId = BigInt(body.accountId);
+        await requireFinanceAccount(sql, auth.userId, accountId);
+      }
+    }
+
+    let categoryId = existing.category_id ?? null;
+    if (body.categoryId !== undefined) {
+      if (body.categoryId === null) categoryId = null;
+      else {
+        categoryId = BigInt(body.categoryId);
+        await requireFinanceCategory(sql, auth.userId, categoryId);
+      }
+    }
+
     const kind = body.kind !== undefined ? body.kind : existing.kind;
     const amount = body.amount !== undefined ? parseAmount(body.amount) : existing.amount;
     const category = body.category !== undefined ? body.category : existing.category;
     const note = body.note !== undefined ? body.note : existing.note;
     const occurredOn =
       body.occurredOn !== undefined ? body.occurredOn : existing.occurred_on.toISOString().slice(0, 10);
+    const merchant = body.merchant !== undefined ? body.merchant : existing.merchant ?? null;
+    const paymentMethod =
+      body.paymentMethod !== undefined ? body.paymentMethod : existing.payment_method ?? null;
+    const tags =
+      body.tags !== undefined ? body.tags : ((existing.tags as string[] | null | undefined) ?? []);
+    const tagSql = tags.length > 0 ? sql.array(tags) : sql`ARRAY[]::text[]`;
 
     const [row] = await sql<TransactionRow[]>`
       UPDATE transactions SET
@@ -59,7 +84,12 @@ export const PATCH = withApiRoute(
         amount = ${amount}::numeric,
         category = ${category},
         note = ${note},
-        occurred_on = ${occurredOn}
+        occurred_on = ${occurredOn},
+        account_id = ${accountId},
+        category_id = ${categoryId},
+        merchant = ${merchant},
+        payment_method = ${paymentMethod},
+        tags = ${tagSql}
       WHERE id = ${id} AND user_id = ${auth.userId}
       RETURNING *
     `;

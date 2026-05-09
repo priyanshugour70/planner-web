@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useOverviewDashboard } from "@/modules/overview/hooks/use-overview-dashboard";
 import { WORKSPACE_MODULES } from "@/lib/nav/modules";
 import { PRODUCT_NAME } from "@/lib/product";
+import { formatInrAmount } from "@/lib/format-inr";
 import { cn } from "@/lib/utils";
 
 export function AuthenticatedHome() {
@@ -67,8 +68,8 @@ export function AuthenticatedHome() {
                 <CardContent className="pt-0">
                   {fin ? (
                     <>
-                      <p className="text-sm text-emerald-600 dark:text-emerald-400">+{fin.monthIncome}</p>
-                      <p className="text-sm text-destructive">−{fin.monthSpend}</p>
+                      <p className="text-sm text-emerald-600 dark:text-emerald-400">+{formatInrAmount(fin.monthIncome)}</p>
+                      <p className="text-sm text-destructive">−{formatInrAmount(fin.monthSpend)}</p>
                     </>
                   ) : (
                     <Skeleton className="h-10 w-full" />
@@ -84,7 +85,7 @@ export function AuthenticatedHome() {
                 </CardHeader>
                 {fin ? (
                   <CardContent className="pt-0 text-xs text-muted-foreground">
-                    Exposure {fin.openDebtExposure}
+                    Exposure {formatInrAmount(fin.openDebtExposure)}
                     {fin.upcomingDebtDue7d > 0 ? ` · ${fin.upcomingDebtDue7d} due within 7d` : null}
                   </CardContent>
                 ) : null}

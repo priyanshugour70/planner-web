@@ -2,6 +2,7 @@ import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
 import * as Auth from "@/modules/auth/server/auth-service";
 import { HttpError } from "@/modules/auth/server/http-error";
+import { requireFinanceAccount, requireFinanceCategory } from "@/modules/finance/server/guards";
 import { parseAmount, transactionCreateSchema } from "@/modules/finance/server/schemas";
 import { serializeTransaction, type TransactionRow } from "@/modules/finance/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
@@ -74,11 +75,30 @@ export const POST = withApiRoute(
       if (!b) throw new HttpError(400, ErrorCodes.VALIDATION_ERROR, "Invalid budget");
     }
 
+    let accountId: bigint | null = null;
+    if (body.accountId) {
+      accountId = BigInt(body.accountId);
+      await requireFinanceAccount(sql, auth.userId, accountId);
+    }
+
+    let categoryId: bigint | null = null;
+    if (body.categoryId) {
+      categoryId = BigInt(body.categoryId);
+      await requireFinanceCategory(sql, auth.userId, categoryId);
+    }
+
     const amt = parseAmount(body.amount);
     const occurredOn = body.occurredOn ?? new Date().toISOString().slice(0, 10);
+    const tags = body.tags?.length ? body.tags : [];
+    const merchant = body.merchant ?? null;
+    const paymentMethod = body.paymentMethod ?? null;
+    const tagSql = tags.length > 0 ? sql.array(tags) : sql`ARRAY[]::text[]`;
 
     const [row] = await sql<TransactionRow[]>`
-      INSERT INTO transactions (user_id, budget_id, kind, amount, category, note, occurred_on)
+      INSERT INTO transactions (
+        user_id, budget_id, kind, amount, category, note, occurred_on,
+        account_id, category_id, merchant, payment_method, tags
+      )
       VALUES (
         ${auth.userId},
         ${budgetId},
@@ -86,7 +106,12 @@ export const POST = withApiRoute(
         ${amt}::numeric,
         ${body.category ?? null},
         ${body.note ?? null},
-        ${occurredOn}
+        ${occurredOn},
+        ${accountId},
+        ${categoryId},
+        ${merchant},
+        ${paymentMethod},
+        ${tagSql}
       )
       RETURNING *
     `;

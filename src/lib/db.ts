@@ -4,7 +4,7 @@ import { resolveDatabaseUrl } from "@/lib/db-url";
 
 /** Widen client typing: default `postgres.Sql<{}>` treats parameters as `never` for interpolated values. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SqlClient = postgres.Sql<any>;
+export type SqlClient = postgres.Sql<any>;
 
 type GlobalWithPg = typeof globalThis & { __planner_pg?: SqlClient };
 

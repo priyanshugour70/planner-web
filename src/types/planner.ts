@@ -77,6 +77,58 @@ export type FinanceSummaryDTO = {
   budgetCount: number;
 };
 
+export type FinanceAccountDTO = {
+  id: string;
+  userId: string;
+  name: string;
+  kind: string;
+  currency: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type FinanceCategoryDTO = {
+  id: string;
+  userId: string;
+  name: string;
+  kind: string;
+  parentId: string | null;
+  createdAt: string;
+};
+
+export type DebtObligationDTO = {
+  id: string;
+  userId: string;
+  counterparty: string;
+  direction: string;
+  principal: string;
+  balance: string;
+  currency: string;
+  dueDate: string | null;
+  status: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DebtPaymentDTO = {
+  id: string;
+  obligationId: string;
+  amount: string;
+  paidAt: string;
+  note: string | null;
+};
+
+export type BudgetRollupDTO = {
+  budgetId: string;
+  name: string;
+  category: string | null;
+  amountLimit: string;
+  spent: string;
+  periodStart: string | null;
+  periodEnd: string | null;
+};
+
 export type HabitDTO = {
   id: string;
   userId: string;
