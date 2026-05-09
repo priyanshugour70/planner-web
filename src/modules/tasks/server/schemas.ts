@@ -1,6 +1,5 @@
 import { z } from "zod";
-
-const idString = z.string().regex(/^\d+$/);
+import { idStringSchema } from "@/modules/shared/server/zod-ids";
 
 export const taskStatusSchema = z.enum(["todo", "in_progress", "done", "cancelled"]);
 
@@ -10,8 +9,8 @@ export const taskCreateSchema = z.object({
   status: taskStatusSchema.optional(),
   priority: z.number().int().min(0).max(5).optional(),
   dueAt: z.union([z.string().datetime(), z.null()]).optional(),
-  goalId: idString.optional().nullable(),
-  parentTaskId: idString.optional().nullable(),
+  goalId: idStringSchema.optional().nullable(),
+  parentTaskId: idStringSchema.optional().nullable(),
   tags: z.array(z.string().max(64)).max(32).optional(),
 });
 

@@ -1,13 +1,14 @@
 import { z } from "zod";
-
-const idString = z.string().regex(/^\d+$/);
+import { idStringSchema } from "@/modules/shared/server/zod-ids";
 
 export const financeKindSchema = z.enum(["income", "expense"]);
+
+const amountInput = z.union([z.number().nonnegative(), z.string().regex(/^\d+(\.\d{1,2})?$/)]);
 
 export const budgetCreateSchema = z.object({
   name: z.string().trim().min(1).max(200),
   category: z.string().trim().max(120).optional().nullable(),
-  amountLimit: z.union([z.number().nonnegative(), z.string().regex(/^\d+(\.\d{1,2})?$/)]),
+  amountLimit: amountInput,
   periodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   periodEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   notes: z.string().max(5000).optional().nullable(),
@@ -17,11 +18,11 @@ export const budgetPatchSchema = budgetCreateSchema.partial();
 
 export const transactionCreateSchema = z.object({
   kind: financeKindSchema,
-  amount: z.union([z.number().nonnegative(), z.string().regex(/^\d+(\.\d{1,2})?$/)]),
+  amount: amountInput,
   category: z.string().trim().max(120).optional().nullable(),
   note: z.string().max(2000).optional().nullable(),
   occurredOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  budgetId: idString.optional().nullable(),
+  budgetId: idStringSchema.optional().nullable(),
 });
 
 export const transactionPatchSchema = transactionCreateSchema.partial();
