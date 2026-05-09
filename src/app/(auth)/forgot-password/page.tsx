@@ -1,12 +1,12 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { AuthFooterLink, AuthShell } from "@/components/auth/auth-shell";
+import { AuthFooterLink, AuthShell } from "@/modules/auth/components/auth-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import * as AuthApi from "@/services/auth.service";
+import * as AuthApi from "@/modules/auth/services/auth.service";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");

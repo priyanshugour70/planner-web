@@ -2,8 +2,8 @@ import { buildRefreshClearCookie, readRefreshTokenFromCookie } from "@/lib/auth/
 import { jsonSuccess, withSetCookies } from "@/lib/api/response-builder";
 import { withApiRoute } from "@/lib/api/with-api-route";
 import { getServerEnv } from "@/lib/config/server-env";
-import * as Auth from "@/server/auth/auth-service";
-import { logoutBodySchema } from "@/server/auth/validators";
+import * as Auth from "@/modules/auth/server/auth-service";
+import { logoutBodySchema } from "@/modules/auth/server/validators";
 
 export const POST = withApiRoute(
   {

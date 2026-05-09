@@ -1,7 +1,7 @@
 "use client";
 
 import { ThemeProvider } from "next-themes";
-import { AuthBootstrap } from "@/components/auth/auth-bootstrap";
+import { AuthBootstrap } from "@/modules/auth/components/auth-bootstrap";
 import { Toaster } from "@/components/ui/sonner";
 
 export function Providers({ children }: { children: React.ReactNode }) {

@@ -2,16 +2,16 @@ import "server-only";
 import { decodeJwt } from "jose";
 import { getSql } from "@/lib/db";
 import { getServerEnv } from "@/lib/config/server-env";
-import { hashPassword, verifyPassword } from "@/server/auth/password";
+import { hashPassword, verifyPassword } from "@/modules/auth/server/password";
 import {
   generateAccessJti,
   generateOtpCode,
   generateRefreshToken,
   hashOpaqueToken,
-} from "@/server/auth/token-hash";
-import { signAccessToken, verifyAccessToken } from "@/server/auth/jwt";
-import { parseUa } from "@/server/auth/ua";
-import { HttpError } from "@/server/auth/http-error";
+} from "@/modules/auth/server/token-hash";
+import { signAccessToken, verifyAccessToken } from "@/modules/auth/server/jwt";
+import { parseUa } from "@/modules/auth/server/ua";
+import { HttpError } from "@/modules/auth/server/http-error";
 import type { z } from "zod";
 import type {
   changePasswordBodySchema,
@@ -21,7 +21,7 @@ import type {
   sendOtpBodySchema,
   signupBodySchema,
   verifyOtpBodySchema,
-} from "@/server/auth/validators";
+} from "@/modules/auth/server/validators";
 
 type Signup = z.infer<typeof signupBodySchema>;
 type Login = z.infer<typeof loginBodySchema>;

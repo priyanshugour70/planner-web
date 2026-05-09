@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useHabitsStore } from "@/modules/habits/store/habits-store";
+import { useHabitsStore } from "@/modules/habits/stores/habits-store";
 
 export function useHabits() {
   useEffect(() => {

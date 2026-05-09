@@ -1,6 +1,6 @@
 import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
-import { HttpError } from "@/server/auth/http-error";
-import * as Auth from "@/server/auth/auth-service";
+import { HttpError } from "@/modules/auth/server/http-error";
+import * as Auth from "@/modules/auth/server/auth-service";
 
 function sessionIdFromPath(pathname: string): string | null {
   const m = pathname.match(/\/sessions\/([^/]+)\/?$/);

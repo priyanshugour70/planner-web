@@ -1,6 +1,6 @@
 import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { computeFinanceSummary } from "@/modules/finance/server/analytics";
-import * as Auth from "@/server/auth/auth-service";
+import * as Auth from "@/modules/auth/server/auth-service";
 
 export const GET = withApiRoute(
   { module: "planner", action: "finance_summary" },

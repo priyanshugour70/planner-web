@@ -3,8 +3,8 @@ import { jsonSuccess, withSetCookies } from "@/lib/api/response-builder";
 import { withApiRoute } from "@/lib/api/with-api-route";
 import { getServerEnv } from "@/lib/config/server-env";
 import { assertRefreshOriginAllowed } from "@/lib/http/safe-origin";
-import * as Auth from "@/server/auth/auth-service";
-import { refreshBodySchema } from "@/server/auth/validators";
+import * as Auth from "@/modules/auth/server/auth-service";
+import { refreshBodySchema } from "@/modules/auth/server/validators";
 
 export const POST = withApiRoute(
   {

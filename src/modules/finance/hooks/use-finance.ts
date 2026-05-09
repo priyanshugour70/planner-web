@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useFinanceStore } from "@/modules/finance/store/finance-store";
+import { useFinanceStore } from "@/modules/finance/stores/finance-store";
 
 export function useFinance() {
   useEffect(() => {

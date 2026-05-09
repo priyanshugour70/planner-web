@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useCalendarStore } from "@/modules/calendar/store/calendar-store";
+import { useCalendarStore } from "@/modules/calendar/stores/calendar-store";
 
 export function useCalendar() {
   useEffect(() => {

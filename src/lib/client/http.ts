@@ -1,7 +1,7 @@
 "use client";
 
 import type { APIEnvelope } from "@/types/api-response";
-import { useAuthStore } from "@/store/auth-store";
+import { useAuthStore } from "@/modules/auth/stores/auth-store";
 
 async function tryRefresh(): Promise<boolean> {
   const res = await fetch("/api/v1/auth/refresh", {

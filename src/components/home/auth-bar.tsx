@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/modules/auth/hooks/use-auth";
 import {
   DropdownMenu,
   DropdownMenuContent,

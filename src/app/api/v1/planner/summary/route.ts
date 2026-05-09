@@ -1,6 +1,6 @@
 import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
-import * as Auth from "@/server/auth/auth-service";
+import * as Auth from "@/modules/auth/server/auth-service";
 
 export const GET = withApiRoute(
   { module: "planner", action: "summary" },

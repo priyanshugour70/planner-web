@@ -1,7 +1,7 @@
 import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
-import * as Auth from "@/server/auth/auth-service";
-import { HttpError } from "@/server/auth/http-error";
+import * as Auth from "@/modules/auth/server/auth-service";
+import { HttpError } from "@/modules/auth/server/http-error";
 import { ErrorCodes } from "@/types/api-error";
 
 const re = /\/planner\/habits\/(\d+)\/entries\/(\d+)\/?$/;

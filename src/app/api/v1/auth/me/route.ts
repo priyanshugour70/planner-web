@@ -1,5 +1,5 @@
 import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
-import * as Auth from "@/server/auth/auth-service";
+import * as Auth from "@/modules/auth/server/auth-service";
 
 export const GET = withApiRoute(
   {

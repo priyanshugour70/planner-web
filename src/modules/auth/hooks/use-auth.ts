@@ -2,8 +2,8 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import * as AuthApi from "@/services/auth.service";
-import { useAuthStore } from "@/store/auth-store";
+import * as AuthApi from "@/modules/auth/services/auth.service";
+import { useAuthStore } from "@/modules/auth/stores/auth-store";
 import type { AuthSessionPayload } from "@/types/auth";
 
 function isAuthPayload(

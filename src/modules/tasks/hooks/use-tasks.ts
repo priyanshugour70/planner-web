@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useTasksStore } from "@/modules/tasks/store/tasks-store";
+import { useTasksStore } from "@/modules/tasks/stores/tasks-store";
 
 export function useTasks() {
   useEffect(() => {

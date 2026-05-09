@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useJournalStore } from "@/modules/journal/store/journal-store";
+import { useJournalStore } from "@/modules/journal/stores/journal-store";
 
 export function useJournal() {
   useEffect(() => {

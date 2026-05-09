@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { HttpError } from "@/server/auth/http-error";
+import { HttpError } from "@/modules/auth/server/http-error";
 
 /**
  * Rejects cross-site refresh attempts when `Origin` is present and does not match the request host.

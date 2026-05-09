@@ -1,14 +1,23 @@
-/** OpenAPI 3.0 document for Planner Auth API v1 */
+import { plannerOpenApiPaths } from "./planner-paths";
+
+/** OpenAPI 3.0 document for Planner API v1 (auth + workspace REST for web and mobile). */
 export const openApiDocument = {
   openapi: "3.0.3",
   info: {
     title: "Planner API",
     version: "1.0.0",
     description:
-      "Enterprise authentication and session APIs. All success responses follow the envelope: success, message, data, meta, timestamp, requestId.",
+      "Authentication, sessions, and authenticated workspace (planner) REST under `/api/v1`. Native apps should obtain an access token from `/auth/login` or `/auth/signup`, then call planner routes with `Authorization: Bearer <accessToken>`. All success responses use the envelope: success, message, data, meta, timestamp, requestId.",
   },
   servers: [{ url: "/api/v1", description: "Version 1" }],
-  tags: [{ name: "Auth", description: "Authentication and sessions" }],
+  tags: [
+    { name: "Auth", description: "Authentication and sessions" },
+    {
+      name: "Planner",
+      description:
+        "User-scoped workspace resources (goals, tasks, finance, habits, journal, notes, calendar). Requires Bearer JWT unless noted.",
+    },
+  ],
   components: {
     securitySchemes: {
       bearerAuth: {
@@ -381,5 +390,6 @@ export const openApiDocument = {
         responses: { "200": { description: "OK" } },
       },
     },
+    ...plannerOpenApiPaths,
   },
 };

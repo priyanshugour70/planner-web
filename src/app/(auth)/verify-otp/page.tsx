@@ -2,13 +2,13 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AuthFooterLink, AuthShell } from "@/components/auth/auth-shell";
+import { AuthFooterLink, AuthShell } from "@/modules/auth/components/auth-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import * as AuthApi from "@/services/auth.service";
-import { useAuthStore } from "@/store/auth-store";
+import * as AuthApi from "@/modules/auth/services/auth.service";
+import { useAuthStore } from "@/modules/auth/stores/auth-store";
 
 const purposes = [
   "login",

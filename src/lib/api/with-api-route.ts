@@ -10,8 +10,8 @@ import { readRequestId } from "@/lib/http/request-id";
 import { checkRateLimit } from "@/lib/rate-limit/memory";
 import { getServerEnv } from "@/lib/config/server-env";
 import { ErrorCodes } from "@/types/api-error";
-import { HttpError } from "@/server/auth/http-error";
-import { parseUa } from "@/server/auth/ua";
+import { HttpError } from "@/modules/auth/server/http-error";
+import { parseUa } from "@/modules/auth/server/ua";
 import { isMissingSchemaObject } from "@/lib/db/postgres-errors";
 
 export type ApiContext<TBody = unknown> = {

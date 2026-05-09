@@ -14,10 +14,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/modules/auth/hooks/use-auth";
 import { moduleTitleFromPath } from "@/lib/nav/modules";
 import { PRODUCT_NAME } from "@/lib/product";
-import { useAuthStore } from "@/store/auth-store";
+import { useAuthStore } from "@/modules/auth/stores/auth-store";
 import { cn } from "@/lib/utils";
 
 type PersistApi = {

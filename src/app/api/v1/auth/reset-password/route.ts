@@ -1,6 +1,6 @@
 import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
-import * as Auth from "@/server/auth/auth-service";
-import { resetPasswordBodySchema } from "@/server/auth/validators";
+import * as Auth from "@/modules/auth/server/auth-service";
+import { resetPasswordBodySchema } from "@/modules/auth/server/validators";
 
 export const POST = withApiRoute(
   {

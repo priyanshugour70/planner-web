@@ -2,7 +2,7 @@
 
 import { AuthenticatedHome } from "@/components/home/authenticated-home";
 import { LandingPage } from "@/components/home/landing-page";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/modules/auth/hooks/use-auth";
 
 export function SmartHome() {
   const { isAuthenticated, authBootstrapDone } = useAuth();

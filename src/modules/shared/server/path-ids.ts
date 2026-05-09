@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { HttpError } from "@/server/auth/http-error";
+import { HttpError } from "@/modules/auth/server/http-error";
 import { ErrorCodes } from "@/types/api-error";
 
 export function bigIntPathId(req: NextRequest, pattern: RegExp): bigint {

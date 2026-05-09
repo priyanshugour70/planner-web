@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAuthStore } from "@/store/auth-store";
+import { useAuthStore } from "@/modules/auth/stores/auth-store";
 
 function authPersistApi() {
   return useAuthStore.persist as
