@@ -1,61 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import * as HabitsApi from "@/modules/habits/client/api";
-import type { HabitDTO, HabitEntryDTO } from "@/types/planner";
+import { useHabits } from "@/modules/habits/hooks/use-habits";
 
 export function HabitsView() {
-  const [habits, setHabits] = useState<HabitDTO[]>([]);
-  const [entries, setEntries] = useState<Record<string, HabitEntryDTO[]>>({});
+  const { habits, entries, loading, addHabit, logToday, removeHabit } = useHabits();
   const [name, setName] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const res = await HabitsApi.fetchHabits();
-    if (res.success && res.data) {
-      setHabits(res.data);
-      const en: Record<string, HabitEntryDTO[]> = {};
-      for (const h of res.data) {
-        const er = await HabitsApi.fetchHabitEntries(h.id);
-        if (er.success && er.data) en[h.id] = er.data;
-      }
-      setEntries(en);
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      void load();
-    });
-  }, [load]);
-
-  async function add(e: React.FormEvent) {
+  async function onAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    const res = await HabitsApi.createHabit({ name: name.trim() });
-    if (res.success) {
-      setName("");
-      await load();
-    }
-  }
-
-  async function logToday(habitId: string) {
-    const d = new Date().toISOString().slice(0, 10);
-    const res = await HabitsApi.logHabitEntry(habitId, { entryDate: d, count: 1 });
-    if (res.success) await load();
-  }
-
-  async function removeHabit(id: string) {
-    if (!confirm("Delete habit and its history?")) return;
-    const res = await HabitsApi.deleteHabit(id);
-    if (res.success) await load();
+    await addHabit(name.trim());
+    setName("");
   }
 
   if (loading) {
@@ -83,7 +44,7 @@ export function HabitsView() {
           <CardDescription>Name it something you will recognize at a glance.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={add} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <form onSubmit={onAdd} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <Field className="min-w-0 flex-1">
               <FieldLabel htmlFor="habit-name">Name</FieldLabel>
               <FieldContent>

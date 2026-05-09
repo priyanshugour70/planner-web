@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,48 +8,19 @@ import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import * as NotesApi from "@/modules/notes/client/api";
-import type { NoteDTO } from "@/types/planner";
+import { useNotes } from "@/modules/notes/hooks/use-notes";
 
 export function NotesView() {
-  const [notes, setNotes] = useState<NoteDTO[]>([]);
+  const { notes, loading, addNote, togglePin, remove } = useNotes();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const res = await NotesApi.fetchNotes();
-    if (res.success && res.data) setNotes(res.data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      void load();
-    });
-  }, [load]);
-
-  async function add(e: React.FormEvent) {
+  async function onAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
-    const res = await NotesApi.createNote({ title: title.trim(), body });
-    if (res.success) {
-      setTitle("");
-      setBody("");
-      await load();
-    }
-  }
-
-  async function togglePin(n: NoteDTO) {
-    const res = await NotesApi.updateNote(n.id, { pinned: !n.pinned });
-    if (res.success) await load();
-  }
-
-  async function remove(id: string) {
-    if (!confirm("Delete note?")) return;
-    const res = await NotesApi.deleteNote(id);
-    if (res.success) await load();
+    await addNote(title.trim(), body);
+    setTitle("");
+    setBody("");
   }
 
   if (loading) {
@@ -75,7 +46,7 @@ export function NotesView() {
           <CardDescription>Title is required; body is optional.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={add} className="space-y-4">
+          <form onSubmit={onAdd} className="space-y-4">
             <Field>
               <FieldLabel htmlFor="note-title">Title</FieldLabel>
               <FieldContent>

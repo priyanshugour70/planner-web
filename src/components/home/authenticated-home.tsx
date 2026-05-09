@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { AuthBar } from "@/components/home/auth-bar";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -13,24 +12,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchSummary } from "@/modules/overview/client/api";
-import { fetchFinanceSummary } from "@/modules/finance/client/api";
-import type { FinanceSummaryDTO, PlannerSummaryDTO } from "@/types/planner";
+import { useOverviewDashboard } from "@/modules/overview/hooks/use-overview-dashboard";
 import { WORKSPACE_MODULES } from "@/lib/nav/modules";
 import { PRODUCT_NAME } from "@/lib/product";
 import { cn } from "@/lib/utils";
 
 export function AuthenticatedHome() {
-  const [summary, setSummary] = useState<PlannerSummaryDTO | null>(null);
-  const [fin, setFin] = useState<FinanceSummaryDTO | null>(null);
-
-  useEffect(() => {
-    void (async () => {
-      const [s, f] = await Promise.all([fetchSummary(), fetchFinanceSummary()]);
-      if (s.success && s.data) setSummary(s.data);
-      if (f.success && f.data) setFin(f.data);
-    })();
-  }, []);
+  const { summary, financeSummary: fin, loading } = useOverviewDashboard();
 
   return (
     <div className="flex min-h-full flex-col bg-background text-foreground">
@@ -53,7 +41,7 @@ export function AuthenticatedHome() {
         </section>
 
         <section className="mx-auto grid max-w-6xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {!summary ? (
+          {loading || !summary ? (
             <>
               <Skeleton className="h-28 rounded-xl" />
               <Skeleton className="h-28 rounded-xl" />

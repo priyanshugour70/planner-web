@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,50 +22,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import * as TasksApi from "@/modules/tasks/client/api";
-import type { TaskDTO } from "@/types/planner";
+import { useTasks } from "@/modules/tasks/hooks/use-tasks";
 
 export function TasksView() {
-  const [tasks, setTasks] = useState<TaskDTO[]>([]);
-  const [filter, setFilter] = useState<string>("");
+  const { tasks, filter, setFilter, loading, addTask, markDone, remove } = useTasks();
   const [title, setTitle] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const res = await TasksApi.fetchTasks(filter ? { status: filter } : {});
-    if (res.success && res.data) setTasks(res.data);
-    setLoading(false);
-  }, [filter]);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      void load();
-    });
-  }, [load]);
-
-  async function addTask(e: React.FormEvent) {
+  async function onAddTask(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
-    const res = await TasksApi.createTask({ title: title.trim(), status: "todo" });
-    if (res.success) {
-      setTitle("");
-      await load();
-    }
-  }
-
-  async function markDone(t: TaskDTO) {
-    const res = await TasksApi.updateTask(t.id, {
-      status: t.status === "done" ? "todo" : "done",
-      completedAt: t.status === "done" ? null : new Date().toISOString(),
-    });
-    if (res.success) await load();
-  }
-
-  async function remove(id: string) {
-    if (!confirm("Delete task?")) return;
-    const res = await TasksApi.deleteTask(id);
-    if (res.success) await load();
+    await addTask(title.trim());
+    setTitle("");
   }
 
   if (loading) {
@@ -116,7 +83,7 @@ export function TasksView() {
           <CardDescription>Creates a new item with status “todo”.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={addTask} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <form onSubmit={onAddTask} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <Field className="min-w-0 flex-1">
               <FieldLabel htmlFor="new-task">Title</FieldLabel>
               <FieldContent>

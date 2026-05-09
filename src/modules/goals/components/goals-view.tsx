@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,65 +9,17 @@ import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import * as GoalsApi from "@/modules/goals/client/api";
-import type { GoalDTO, MilestoneDTO } from "@/types/planner";
+import { useGoals } from "@/modules/goals/hooks/use-goals";
 
 export function GoalsView() {
-  const [goals, setGoals] = useState<GoalDTO[]>([]);
-  const [milestones, setMilestones] = useState<Record<string, MilestoneDTO[]>>({});
+  const { goals, milestones, loading, msg, addGoal, toggleMilestone, addMilestone, removeGoal } = useGoals();
   const [title, setTitle] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const res = await GoalsApi.fetchGoals();
-    if (res.success && res.data) {
-      setGoals(res.data);
-      const ms: Record<string, MilestoneDTO[]> = {};
-      for (const g of res.data) {
-        const mr = await GoalsApi.fetchMilestones(g.id);
-        if (mr.success && mr.data) ms[g.id] = mr.data;
-      }
-      setMilestones(ms);
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      void load();
-    });
-  }, [load]);
-
-  async function addGoal(e: React.FormEvent) {
+  async function onAddGoal(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
-    const res = await GoalsApi.createGoal({ title: title.trim(), status: "active" });
-    setMsg(res.success ? "Goal added" : res.message);
-    if (res.success) {
-      setTitle("");
-      await load();
-    }
-  }
-
-  async function toggleMilestone(gid: string, m: MilestoneDTO) {
-    const res = await GoalsApi.updateMilestone(gid, m.id, {
-      completedAt: m.completedAt ? null : new Date().toISOString(),
-    });
-    if (res.success) await load();
-  }
-
-  async function addMilestone(goalId: string, titleM: string) {
-    if (!titleM.trim()) return;
-    const res = await GoalsApi.createMilestone(goalId, { title: titleM.trim() });
-    if (res.success) await load();
-  }
-
-  async function removeGoal(id: string) {
-    if (!confirm("Delete this goal and its milestones?")) return;
-    const res = await GoalsApi.deleteGoal(id);
-    if (res.success) await load();
+    await addGoal(title.trim());
+    setTitle("");
   }
 
   if (loading) {
@@ -102,7 +54,7 @@ export function GoalsView() {
           <CardDescription>Start with a clear outcome; milestones come next.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={addGoal} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <form onSubmit={onAddGoal} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <Field className="min-w-0 flex-1">
               <FieldLabel htmlFor="goal-title">Title</FieldLabel>
               <FieldContent>

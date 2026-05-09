@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -12,9 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchSummary } from "@/modules/overview/client/api";
-import { fetchFinanceSummary } from "@/modules/finance/client/api";
-import type { FinanceSummaryDTO, PlannerSummaryDTO } from "@/types/planner";
+import { useOverviewDashboard } from "@/modules/overview/hooks/use-overview-dashboard";
 import { cn } from "@/lib/utils";
 import { PRODUCT_NAME } from "@/lib/product";
 
@@ -29,18 +26,9 @@ const links = [
 ];
 
 export function OverviewView() {
-  const [s, setS] = useState<PlannerSummaryDTO | null>(null);
-  const [fin, setFin] = useState<FinanceSummaryDTO | null>(null);
+  const { summary: s, financeSummary: fin, loading } = useOverviewDashboard();
 
-  useEffect(() => {
-    void (async () => {
-      const [res, f] = await Promise.all([fetchSummary(), fetchFinanceSummary()]);
-      if (res.success && res.data) setS(res.data);
-      if (f.success && f.data) setFin(f.data);
-    })();
-  }, []);
-
-  if (!s) {
+  if (loading) {
     return (
       <div className="space-y-8">
         <div className="space-y-2">
@@ -53,6 +41,14 @@ export function OverviewView() {
           ))}
         </div>
       </div>
+    );
+  }
+
+  if (!s) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Unable to load workspace summary. Check your connection and try again.
+      </p>
     );
   }
 

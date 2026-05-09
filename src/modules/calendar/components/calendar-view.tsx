@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
@@ -14,56 +14,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import * as CalendarApi from "@/modules/calendar/client/api";
-import type { CalendarEventDTO } from "@/types/planner";
-
-function rangeIso(daysBack: number, daysForward: number) {
-  const from = new Date(Date.now() - daysBack * 86400000);
-  const to = new Date(Date.now() + daysForward * 86400000);
-  return { from: from.toISOString(), to: to.toISOString() };
-}
+import { useCalendar } from "@/modules/calendar/hooks/use-calendar";
 
 export function CalendarView() {
-  const [events, setEvents] = useState<CalendarEventDTO[]>([]);
+  const { events, loading, addEvent, removeEvent } = useCalendar();
   const [title, setTitle] = useState("");
   const [starts, setStarts] = useState("");
   const [ends, setEnds] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const { from, to } = rangeIso(1, 14);
-    const res = await CalendarApi.fetchCalendarEvents(from, to);
-    if (res.success && res.data) setEvents(res.data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      void load();
-    });
-  }, [load]);
-
-  async function add(e: React.FormEvent) {
+  async function onAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !starts || !ends) return;
-    const res = await CalendarApi.createCalendarEvent({
-      title: title.trim(),
-      startsAt: new Date(starts).toISOString(),
-      endsAt: new Date(ends).toISOString(),
-    });
-    if (res.success) {
-      setTitle("");
-      setStarts("");
-      setEnds("");
-      await load();
-    }
-  }
-
-  async function remove(id: string) {
-    if (!confirm("Delete event?")) return;
-    const res = await CalendarApi.deleteCalendarEvent(id);
-    if (res.success) await load();
+    await addEvent({ title: title.trim(), startsAt: starts, endsAt: ends });
+    setTitle("");
+    setStarts("");
+    setEnds("");
   }
 
   if (loading) {
@@ -91,7 +56,7 @@ export function CalendarView() {
           <CardDescription>Pick start and end in your local timezone.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={add} className="grid gap-4 sm:grid-cols-2">
+          <form onSubmit={onAdd} className="grid gap-4 sm:grid-cols-2">
             <Field className="sm:col-span-2">
               <FieldLabel htmlFor="event-title">Title</FieldLabel>
               <FieldContent>
@@ -150,7 +115,7 @@ export function CalendarView() {
                     {ev.endsAt ? new Date(ev.endsAt).toLocaleString() : ""}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void remove(ev.id)}>
+                    <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void removeEvent(ev.id)}>
                       Delete
                     </Button>
                   </TableCell>

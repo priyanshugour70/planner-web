@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
@@ -22,35 +22,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import * as FinanceApi from "@/modules/finance/client/api";
-import type { BudgetDTO, FinanceSummaryDTO, TransactionDTO } from "@/types/planner";
+import { useFinance } from "@/modules/finance/hooks/use-finance";
+import type { BudgetDTO, TransactionDTO } from "@/types/planner";
 
 export function FinanceView() {
-  const [tab, setTab] = useState<"tx" | "budgets">("tx");
-  const [tx, setTx] = useState<TransactionDTO[]>([]);
-  const [budgets, setBudgets] = useState<BudgetDTO[]>([]);
-  const [intel, setIntel] = useState<FinanceSummaryDTO | null>(null);
-  const [intelOpen, setIntelOpen] = useState(true);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const [tr, br, fs] = await Promise.all([
-      FinanceApi.fetchTransactions({ limit: "100" }),
-      FinanceApi.fetchBudgets(),
-      FinanceApi.fetchFinanceSummary(),
-    ]);
-    if (tr.success && tr.data) setTx(tr.data);
-    if (br.success && br.data) setBudgets(br.data);
-    if (fs.success && fs.data) setIntel(fs.data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      void load();
-    });
-  }, [load]);
+  const {
+    tab,
+    setTab,
+    intelOpen,
+    setIntelOpen,
+    transactions,
+    budgets,
+    summary,
+    loading,
+    createTx,
+    removeTx,
+    createBudget,
+    removeBudget,
+  } = useFinance();
 
   if (loading) {
     return (
@@ -84,28 +73,28 @@ export function FinanceView() {
         </CardHeader>
         {intelOpen ? (
           <CardContent className="border-t pt-4">
-            {intel ? (
+            {summary ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Spend (MTD)</p>
-                  <p className="text-xl font-semibold tabular-nums text-destructive">−{intel.monthSpend}</p>
+                  <p className="text-xl font-semibold tabular-nums text-destructive">−{summary.monthSpend}</p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Income (MTD)</p>
                   <p className="text-xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-                    +{intel.monthIncome}
+                    +{summary.monthIncome}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Open debt</p>
-                  <p className="text-xl font-semibold tabular-nums">{intel.openDebtCount}</p>
-                  <p className="text-xs text-muted-foreground">Exposure {intel.openDebtExposure}</p>
+                  <p className="text-xl font-semibold tabular-nums">{summary.openDebtCount}</p>
+                  <p className="text-xs text-muted-foreground">Exposure {summary.openDebtExposure}</p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Budgets</p>
-                  <p className="text-xl font-semibold tabular-nums">{intel.budgetCount}</p>
-                  {intel.upcomingDebtDue7d > 0 ? (
-                    <p className="text-xs text-amber-600 dark:text-amber-400">{intel.upcomingDebtDue7d} due ≤ 7d</p>
+                  <p className="text-xl font-semibold tabular-nums">{summary.budgetCount}</p>
+                  {summary.upcomingDebtDue7d > 0 ? (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">{summary.upcomingDebtDue7d} due ≤ 7d</p>
                   ) : (
                     <p className="text-xs text-muted-foreground">No near-term due flags</p>
                   )}
@@ -126,10 +115,10 @@ export function FinanceView() {
           <TabsTrigger value="budgets">Budgets</TabsTrigger>
         </TabsList>
         <TabsContent value="tx" className="mt-6">
-          <TransactionsSection items={tx} onRefresh={load} />
+          <TransactionsSection items={transactions} onCreateTx={createTx} onRemoveTx={removeTx} />
         </TabsContent>
         <TabsContent value="budgets" className="mt-6">
-          <BudgetsSection items={budgets} onRefresh={load} />
+          <BudgetsSection items={budgets} onCreateBudget={createBudget} onRemoveBudget={removeBudget} />
         </TabsContent>
       </Tabs>
     </div>
@@ -138,10 +127,12 @@ export function FinanceView() {
 
 function TransactionsSection({
   items,
-  onRefresh,
+  onCreateTx,
+  onRemoveTx,
 }: {
   items: TransactionDTO[];
-  onRefresh: () => Promise<void>;
+  onCreateTx: (input: { kind: "income" | "expense"; amount: number; category?: string }) => Promise<void>;
+  onRemoveTx: (id: string) => Promise<void>;
 }) {
   const [kind, setKind] = useState<"income" | "expense">("expense");
   const [amount, setAmount] = useState("");
@@ -149,16 +140,13 @@ function TransactionsSection({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const res = await FinanceApi.createTransaction({
+    await onCreateTx({
       kind,
       amount: Number(amount),
       category: category || undefined,
     });
-    if (res.success) {
-      setAmount("");
-      setCategory("");
-      await onRefresh();
-    }
+    setAmount("");
+    setCategory("");
   }
 
   return (
@@ -245,7 +233,14 @@ function TransactionsSection({
                     {t.amount}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground" onClick={() => void delTx(t.id, onRefresh)} aria-label="Remove">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-muted-foreground"
+                      onClick={() => void onRemoveTx(t.id)}
+                      aria-label="Remove"
+                    >
                       ×
                     </Button>
                   </TableCell>
@@ -259,17 +254,14 @@ function TransactionsSection({
   );
 }
 
-async function delTx(id: string, onRefresh: () => Promise<void>) {
-  const res = await FinanceApi.deleteTransaction(id);
-  if (res.success) await onRefresh();
-}
-
 function BudgetsSection({
   items,
-  onRefresh,
+  onCreateBudget,
+  onRemoveBudget,
 }: {
   items: BudgetDTO[];
-  onRefresh: () => Promise<void>;
+  onCreateBudget: (input: { name: string; amountLimit: number; periodStart: string; periodEnd: string }) => Promise<void>;
+  onRemoveBudget: (id: string) => Promise<void>;
 }) {
   const [name, setName] = useState("");
   const [limit, setLimit] = useState("");
@@ -282,17 +274,14 @@ function BudgetsSection({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const res = await FinanceApi.createBudget({
+    await onCreateBudget({
       name,
       amountLimit: Number(limit),
       periodStart: start,
       periodEnd: end,
     });
-    if (res.success) {
-      setName("");
-      setLimit("");
-      await onRefresh();
-    }
+    setName("");
+    setLimit("");
   }
 
   return (
@@ -359,7 +348,7 @@ function BudgetsSection({
                   <TableCell className="font-medium">{b.name}</TableCell>
                   <TableCell className="text-right text-muted-foreground">{b.amountLimit}</TableCell>
                   <TableCell className="text-right">
-                    <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void delBudget(b.id, onRefresh)}>
+                    <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void onRemoveBudget(b.id)}>
                       Delete
                     </Button>
                   </TableCell>
@@ -371,9 +360,4 @@ function BudgetsSection({
       </Card>
     </div>
   );
-}
-
-async function delBudget(id: string, onRefresh: () => Promise<void>) {
-  const res = await FinanceApi.deleteBudget(id);
-  if (res.success) await onRefresh();
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
@@ -8,42 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import * as JournalApi from "@/modules/journal/client/api";
-import type { JournalEntryDTO } from "@/types/planner";
+import { useJournal } from "@/modules/journal/hooks/use-journal";
 
 export function JournalView() {
-  const [entries, setEntries] = useState<JournalEntryDTO[]>([]);
+  const { entries, loading, saveEntry, removeEntry } = useJournal();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const res = await JournalApi.fetchJournal();
-    if (res.success && res.data) setEntries(res.data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      void load();
-    });
-  }, [load]);
-
-  async function save(e: React.FormEvent) {
+  async function onSave(e: React.FormEvent) {
     e.preventDefault();
-    const res = await JournalApi.createJournalEntry({ title: title || "Entry", body });
-    if (res.success) {
-      setTitle("");
-      setBody("");
-      await load();
-    }
-  }
-
-  async function remove(id: string) {
-    if (!confirm("Delete entry?")) return;
-    const res = await JournalApi.deleteJournalEntry(id);
-    if (res.success) await load();
+    await saveEntry(title, body);
+    setTitle("");
+    setBody("");
   }
 
   if (loading) {
@@ -71,7 +47,7 @@ export function JournalView() {
           <CardDescription>Title defaults to “Entry” if you leave it blank.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={save} className="space-y-4">
+          <form onSubmit={onSave} className="space-y-4">
             <Field>
               <FieldLabel htmlFor="journal-title">Title</FieldLabel>
               <FieldContent>
@@ -95,7 +71,7 @@ export function JournalView() {
             <Card>
               <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2 space-y-0">
                 <CardTitle className="text-lg">{j.title || "Untitled"}</CardTitle>
-                <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void remove(j.id)}>
+                <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void removeEntry(j.id)}>
                   Delete
                 </Button>
               </CardHeader>
