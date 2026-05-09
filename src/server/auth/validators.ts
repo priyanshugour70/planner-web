@@ -31,9 +31,12 @@ export const loginBodySchema = z.object({
   deviceId: z.string().max(128).optional(),
 });
 
-export const refreshBodySchema = z.object({
-  refreshToken: z.string().min(10).max(2048),
-});
+/** Prefer httpOnly cookie; body token is legacy/mobile escape hatch only. */
+export const refreshBodySchema = z
+  .object({
+    refreshToken: z.string().min(10).max(2048).optional(),
+  })
+  .strict();
 
 export const forgotPasswordBodySchema = z.object({
   email: emailSchema,

@@ -66,13 +66,14 @@ export default function VerifyOtpPage() {
         setError(res.message || "Verification failed");
         return;
       }
-      if ("accessToken" in res.data && "refreshToken" in res.data) {
+      if ("accessToken" in res.data && "user" in res.data) {
         useAuthStore.getState().setSession({
           accessToken: res.data.accessToken,
-          refreshToken: res.data.refreshToken,
           user: res.data.user,
         });
-        router.push("/dashboard");
+        const next = search.get("next");
+        const safe = next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+        router.push(safe);
         return;
       }
       setInfo("Verified.");

@@ -1,4 +1,7 @@
-import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
+import { buildRefreshClearCookie, readRefreshTokenFromCookie } from "@/lib/auth/refresh-cookie";
+import { jsonSuccess, withSetCookies } from "@/lib/api/response-builder";
+import { withApiRoute } from "@/lib/api/with-api-route";
+import { getServerEnv } from "@/lib/config/server-env";
 import * as Auth from "@/server/auth/auth-service";
 import { logoutBodySchema } from "@/server/auth/validators";
 
@@ -11,12 +14,15 @@ export const POST = withApiRoute(
     parseBody: logoutBodySchema,
   },
   async ({ body, requestId, req }) => {
+    const env = getServerEnv();
+    const fromCookie = readRefreshTokenFromCookie(req.headers.get("cookie"), env);
     const data = await Auth.logout({
       accessToken: req.headers.get("authorization")?.startsWith("Bearer ")
         ? req.headers.get("authorization")!.slice("Bearer ".length).trim()
         : null,
-      refreshToken: body.refreshToken ?? null,
+      refreshToken: fromCookie ?? body.refreshToken ?? null,
     });
-    return jsonSuccess(requestId, data, { message: "Signed out" });
+    const res = jsonSuccess(requestId, data, { message: "Signed out" });
+    return withSetCookies(res, [buildRefreshClearCookie(env)]);
   }
 );

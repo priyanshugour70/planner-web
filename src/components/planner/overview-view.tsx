@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import * as Planner from "@/services/planner.service";
-import type { PlannerSummaryDTO } from "@/types/planner";
+import type { FinanceSummaryDTO, PlannerSummaryDTO } from "@/types/planner";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -28,11 +28,13 @@ const links = [
 
 export function OverviewView() {
   const [s, setS] = useState<PlannerSummaryDTO | null>(null);
+  const [fin, setFin] = useState<FinanceSummaryDTO | null>(null);
 
   useEffect(() => {
     void (async () => {
-      const res = await Planner.fetchSummary();
+      const [res, f] = await Promise.all([Planner.fetchSummary(), Planner.fetchFinanceSummary()]);
       if (res.success && res.data) setS(res.data);
+      if (f.success && f.data) setFin(f.data);
     })();
   }, []);
 
@@ -57,7 +59,7 @@ export function OverviewView() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Counts across your workspace. Open any module from the sidebar or below.
+          Cross-module snapshot. Use the launcher (bottom-right) or ⌘K to jump anywhere.
         </p>
       </header>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -92,6 +94,32 @@ export function OverviewView() {
           </CardHeader>
         </Card>
       </div>
+      {fin ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Finance health</CardTitle>
+            <CardDescription>This month and open obligations.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-6 text-sm">
+            <div>
+              <span className="text-muted-foreground">MTD spend</span>
+              <p className="font-semibold text-destructive">−{fin.monthSpend}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">MTD income</span>
+              <p className="font-semibold text-emerald-600 dark:text-emerald-400">+{fin.monthIncome}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Open debt</span>
+              <p className="font-semibold">{fin.openDebtCount}</p>
+              <p className="text-xs text-muted-foreground">Exposure {fin.openDebtExposure}</p>
+            </div>
+            <Link href="/finance" className={cn(buttonVariants({ variant: "link", size: "sm" }), "h-auto self-center p-0")}>
+              Open finance →
+            </Link>
+          </CardContent>
+        </Card>
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {links.map((l) => (
           <Link

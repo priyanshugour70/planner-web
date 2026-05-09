@@ -23,19 +23,26 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import * as Planner from "@/services/planner.service";
-import type { BudgetDTO, TransactionDTO } from "@/types/planner";
+import type { BudgetDTO, FinanceSummaryDTO, TransactionDTO } from "@/types/planner";
 
 export function FinanceView() {
   const [tab, setTab] = useState<"tx" | "budgets">("tx");
   const [tx, setTx] = useState<TransactionDTO[]>([]);
   const [budgets, setBudgets] = useState<BudgetDTO[]>([]);
+  const [intel, setIntel] = useState<FinanceSummaryDTO | null>(null);
+  const [intelOpen, setIntelOpen] = useState(true);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [tr, br] = await Promise.all([Planner.fetchTransactions(), Planner.fetchBudgets()]);
+    const [tr, br, fs] = await Promise.all([
+      Planner.fetchTransactions({ limit: "100" }),
+      Planner.fetchBudgets(),
+      Planner.fetchFinanceSummary(),
+    ]);
     if (tr.success && tr.data) setTx(tr.data);
     if (br.success && br.data) setBudgets(br.data);
+    if (fs.success && fs.data) setIntel(fs.data);
     setLoading(false);
   }, []);
 
@@ -60,8 +67,58 @@ export function FinanceView() {
     <div className="space-y-8">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Finance</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Log income and expenses, and set budgets by period.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Personal finance workspace — cash flow, budgets, and debt signals in one calm view.
+        </p>
       </header>
+
+      <Card>
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0 pb-2">
+          <div>
+            <CardTitle className="text-base">Intelligence</CardTitle>
+            <CardDescription>Month-to-date movement and obligations snapshot.</CardDescription>
+          </div>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setIntelOpen((v) => !v)}>
+            {intelOpen ? "Collapse" : "Expand"}
+          </Button>
+        </CardHeader>
+        {intelOpen ? (
+          <CardContent className="border-t pt-4">
+            {intel ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Spend (MTD)</p>
+                  <p className="text-xl font-semibold tabular-nums text-destructive">−{intel.monthSpend}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Income (MTD)</p>
+                  <p className="text-xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                    +{intel.monthIncome}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Open debt</p>
+                  <p className="text-xl font-semibold tabular-nums">{intel.openDebtCount}</p>
+                  <p className="text-xs text-muted-foreground">Exposure {intel.openDebtExposure}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Budgets</p>
+                  <p className="text-xl font-semibold tabular-nums">{intel.budgetCount}</p>
+                  {intel.upcomingDebtDue7d > 0 ? (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">{intel.upcomingDebtDue7d} due ≤ 7d</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No near-term due flags</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Analytics unavailable. Ensure migrations are applied (`pnpm db:migrate`).
+              </p>
+            )}
+          </CardContent>
+        ) : null}
+      </Card>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as "tx" | "budgets")}>
         <TabsList>

@@ -9,16 +9,19 @@ import type { AuthSessionPayload } from "@/types/auth";
 function isAuthPayload(
   data: AuthSessionPayload | { ok: true; message: string }
 ): data is AuthSessionPayload {
-  return "accessToken" in data && "refreshToken" in data;
+  return "accessToken" in data && "user" in data;
 }
 
 export function useAuth() {
   const router = useRouter();
-  const { accessToken, user, setSession, clear } = useAuthStore();
+  const { accessToken, user, setSession, clear, authBootstrapDone, setLastPath } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isAuthenticated = useMemo(() => Boolean(accessToken && user), [accessToken, user]);
+  const isAuthenticated = useMemo(
+    () => Boolean(authBootstrapDone && accessToken && user),
+    [authBootstrapDone, accessToken, user]
+  );
 
   const applySession = useCallback(
     (payload: AuthSessionPayload) => {
@@ -42,7 +45,11 @@ export function useAuth() {
           return false;
         }
         applySession(res.data);
-        router.push("/dashboard");
+        {
+          const next = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("next") : null;
+          const safe = next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+          router.push(safe);
+        }
         return true;
       } catch (e) {
         setError(e instanceof Error ? e.message : "Login failed");
@@ -65,7 +72,11 @@ export function useAuth() {
           return false;
         }
         applySession(res.data);
-        router.push("/dashboard");
+        {
+          const next = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("next") : null;
+          const safe = next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+          router.push(safe);
+        }
         return true;
       } catch (e) {
         setError(e instanceof Error ? e.message : "Signup failed");
@@ -80,8 +91,7 @@ export function useAuth() {
   const signOut = useCallback(async () => {
     setLoading(true);
     try {
-      const rt = useAuthStore.getState().refreshToken;
-      await AuthApi.logout(rt ? { refreshToken: rt } : {});
+      await AuthApi.logout({});
     } catch {
       /* ignore */
     } finally {
@@ -97,7 +107,6 @@ export function useAuth() {
     const d = res.data;
     setSession({
       accessToken: useAuthStore.getState().accessToken!,
-      refreshToken: useAuthStore.getState().refreshToken!,
       user: {
         id: d.id,
         username: d.username,
@@ -113,11 +122,13 @@ export function useAuth() {
     loading,
     error,
     isAuthenticated,
+    authBootstrapDone,
     signInWithPassword,
     register,
     signOut,
     loadProfile,
     applySession,
     isAuthPayload,
+    setLastPath,
   };
 }

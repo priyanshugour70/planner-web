@@ -4,26 +4,23 @@ import type { APIEnvelope } from "@/types/api-response";
 import { useAuthStore } from "@/store/auth-store";
 
 async function tryRefresh(): Promise<boolean> {
-  const rt = useAuthStore.getState().refreshToken;
-  if (!rt) return false;
   const res = await fetch("/api/v1/auth/refresh", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-request-id": crypto.randomUUID(),
     },
-    body: JSON.stringify({ refreshToken: rt }),
+    body: "{}",
     credentials: "include",
   });
   const body = (await res.json()) as APIEnvelope<{
     accessToken: string;
-    refreshToken: string;
+    user?: import("@/types/auth").AuthUserPublic;
   }>;
-  if (!body.success || !body.data) return false;
+  if (!body.success || !body.data?.accessToken) return false;
   useAuthStore.getState().setSession({
     accessToken: body.data.accessToken,
-    refreshToken: body.data.refreshToken,
-    user: useAuthStore.getState().user,
+    user: body.data.user ?? useAuthStore.getState().user,
   });
   return true;
 }

@@ -29,10 +29,10 @@ export async function logout(payload?: { refreshToken?: string }) {
   });
 }
 
-export async function refresh(refreshToken: string) {
+export async function refresh() {
   return apiRequest<AuthSessionPayload>(
     "/auth/refresh",
-    { method: "POST", body: JSON.stringify({ refreshToken }) },
+    { method: "POST", body: JSON.stringify({}) },
     { skipAuth: true }
   );
 }

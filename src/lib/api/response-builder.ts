@@ -50,6 +50,15 @@ export function jsonSuccess<T>(
   return Response.json(body, { status: init?.status ?? 200, headers: init?.headers });
 }
 
+/** Append `Set-Cookie` headers without cloning JSON body twice. */
+export function withSetCookies(res: Response, cookies: string[]): Response {
+  const headers = new Headers(res.headers);
+  for (const c of cookies) {
+    headers.append("Set-Cookie", c);
+  }
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
 export function jsonError(
   requestId: string,
   status: number,

@@ -61,6 +61,20 @@ export type TransactionDTO = {
   note: string | null;
   occurredOn: string | null;
   createdAt: string;
+  merchant?: string | null;
+  paymentMethod?: string | null;
+  tags?: string[];
+  accountId?: string | null;
+  categoryId?: string | null;
+};
+
+export type FinanceSummaryDTO = {
+  monthSpend: string;
+  monthIncome: string;
+  openDebtCount: number;
+  openDebtExposure: string;
+  upcomingDebtDue7d: number;
+  budgetCount: number;
 };
 
 export type HabitDTO = {

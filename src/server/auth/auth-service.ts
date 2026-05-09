@@ -17,7 +17,6 @@ import type {
   changePasswordBodySchema,
   forgotPasswordBodySchema,
   loginBodySchema,
-  refreshBodySchema,
   resetPasswordBodySchema,
   sendOtpBodySchema,
   signupBodySchema,
@@ -26,7 +25,7 @@ import type {
 
 type Signup = z.infer<typeof signupBodySchema>;
 type Login = z.infer<typeof loginBodySchema>;
-type Refresh = z.infer<typeof refreshBodySchema>;
+type RefreshInput = { refreshToken?: string | null };
 type Forgot = z.infer<typeof forgotPasswordBodySchema>;
 type Reset = z.infer<typeof resetPasswordBodySchema>;
 type SendOtp = z.infer<typeof sendOtpBodySchema>;
@@ -313,10 +312,14 @@ export async function login(
   };
 }
 
-export async function refresh(body: Refresh) {
+export async function refresh(body: RefreshInput) {
   const sql = getSql();
   const env = getServerEnv();
-  const hash = hashOpaqueToken(body.refreshToken, env.JWT_SECRET);
+  const rawIn = (body.refreshToken ?? "").trim();
+  if (!rawIn) {
+    throw new HttpError(401, "UNAUTHORIZED", "Missing refresh token");
+  }
+  const hash = hashOpaqueToken(rawIn, env.JWT_SECRET);
 
   const [row] = await sql<
     {
@@ -349,8 +352,15 @@ export async function refresh(body: Refresh) {
   }
 
   const [u] = await sql<
-    { id: bigint; public_id: string; email_verified: boolean; account_status: string }[]>`
-    SELECT id, public_id::text, email_verified, account_status::text
+    {
+      id: bigint;
+      public_id: string;
+      username: string;
+      email: string;
+      email_verified: boolean;
+      account_status: string;
+    }[]>`
+    SELECT id, public_id::text, username, email, email_verified, account_status::text
     FROM users WHERE id = ${row.user_id} AND deleted_at IS NULL LIMIT 1
   `;
   if (!u) throw new HttpError(401, "INVALID_TOKEN", "User not found");
@@ -384,6 +394,7 @@ export async function refresh(body: Refresh) {
   });
 
   return {
+    user: mapUserPublic(u),
     accessToken,
     refreshToken: rawRefresh,
     expiresIn: env.ACCESS_TOKEN_TTL_SECONDS,

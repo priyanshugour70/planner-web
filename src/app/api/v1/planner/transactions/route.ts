@@ -10,6 +10,8 @@ import { z } from "zod";
 const listQuerySchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  cursor: z.string().regex(/^\d+$/).optional(),
 });
 
 export const GET = withApiRoute(
@@ -26,6 +28,9 @@ export const GET = withApiRoute(
     const sql = getSql();
     const from = parsed.data.from;
     const to = parsed.data.to;
+    const limit = parsed.data.limit ?? (from && to ? 500 : 100);
+    const cursor = parsed.data.cursor ? BigInt(parsed.data.cursor) : null;
+
     const rows =
       from && to
         ? await sql<TransactionRow[]>`
@@ -33,13 +38,26 @@ export const GET = withApiRoute(
             WHERE user_id = ${auth.userId}
               AND occurred_on >= ${from}::date AND occurred_on <= ${to}::date
             ORDER BY occurred_on DESC, id DESC
+            LIMIT ${limit}
           `
-        : await sql<TransactionRow[]>`
-            SELECT * FROM transactions WHERE user_id = ${auth.userId}
-            ORDER BY occurred_on DESC, id DESC
-            LIMIT 200
-          `;
-    return jsonSuccess(requestId, rows.map(serializeTransaction));
+        : cursor != null
+          ? await sql<TransactionRow[]>`
+              SELECT * FROM transactions
+              WHERE user_id = ${auth.userId} AND id < ${cursor}
+              ORDER BY id DESC
+              LIMIT ${limit}
+            `
+          : await sql<TransactionRow[]>`
+              SELECT * FROM transactions
+              WHERE user_id = ${auth.userId}
+              ORDER BY id DESC
+              LIMIT ${limit}
+            `;
+    const nextCursor =
+      !from && rows.length === limit ? String(rows[rows.length - 1]!.id) : null;
+    return jsonSuccess(requestId, rows.map(serializeTransaction), {
+      meta: { nextCursor, limit },
+    });
   }
 );
 

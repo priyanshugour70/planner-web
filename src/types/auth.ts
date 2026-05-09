@@ -10,7 +10,8 @@ export type AuthUserPublic = {
 
 export type AuthSessionPayload = {
   accessToken: string;
-  refreshToken: string;
+  /** Omitted when refresh is delivered only via httpOnly cookie (normal web client). */
+  refreshToken?: string;
   expiresIn: number;
   tokenType: "Bearer";
   sessionId: string;

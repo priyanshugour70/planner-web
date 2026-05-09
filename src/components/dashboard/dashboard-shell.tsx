@@ -1,163 +1,76 @@
 "use client";
 
-import { MenuIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { ChevronDownIcon } from "lucide-react";
+import { PlannerLauncher } from "@/components/nav/planner-launcher";
+import { buttonVariants } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
+import { moduleTitleFromPath } from "@/lib/nav/modules";
 import { useAuthStore } from "@/store/auth-store";
 import { cn } from "@/lib/utils";
-
-const nav = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/goals", label: "Goals" },
-  { href: "/tasks", label: "Tasks" },
-  { href: "/finance", label: "Finance" },
-  { href: "/habits", label: "Habits" },
-  { href: "/journal", label: "Journal" },
-  { href: "/notes", label: "Notes" },
-  { href: "/calendar", label: "Calendar" },
-] as const;
 
 type PersistApi = {
   hasHydrated: () => boolean;
   onFinishHydration: (fn: () => void) => () => void;
 };
 
-/** On SSR/prerender, `localStorage` may be missing — persist middleware skips `api.persist` entirely. */
 function authPersistApi(): PersistApi | undefined {
   const p = (useAuthStore as unknown as { persist?: PersistApi }).persist;
   return p;
 }
 
-function NavLinks({
-  pathname,
-  onNavigate,
-  className,
-}: {
-  pathname: string | null;
-  onNavigate?: () => void;
-  className?: string;
-}) {
-  return (
-    <nav className={cn("flex flex-col gap-0.5 p-2", className)}>
-      {nav.map((item) => {
-        const active =
-          item.href === "/dashboard"
-            ? pathname === "/dashboard"
-            : pathname === item.href || pathname?.startsWith(`${item.href}/`);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            className={cn(
-              buttonVariants({ variant: active ? "secondary" : "ghost", size: "default" }),
-              "w-full justify-start font-medium"
-            )}
-          >
-            {item.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
-
-function SidebarFooter({ onNavigate }: { onNavigate?: () => void }) {
-  const { signOut } = useAuth();
-  return (
-    <div className="border-t p-2">
-      <Link
-        href="/"
-        onClick={onNavigate}
-        className={cn(
-          buttonVariants({ variant: "ghost", size: "default" }),
-          "mb-1 w-full justify-start text-muted-foreground"
-        )}
-      >
-        Home
-      </Link>
-      <Button
-        type="button"
-        variant="ghost"
-        className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
-        onClick={() => {
-          onNavigate?.();
-          void signOut();
-        }}
-      >
-        Sign out
-      </Button>
-    </div>
-  );
-}
-
-function BrandBlock() {
-  return (
-    <div className="border-b px-4 py-5">
-      <Link href="/dashboard" className="text-lg font-semibold tracking-tight">
-        Planner
-      </Link>
-      <p className="mt-1 text-xs text-muted-foreground">End-to-end life OS</p>
-    </div>
-  );
-}
-
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loadProfile } = useAuth();
+  const { isAuthenticated, loadProfile, authBootstrapDone, signOut } = useAuth();
+  const { user, setLastPath } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
   const [persistReady, setPersistReady] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const p = authPersistApi();
     if (!p) {
-      queueMicrotask(() => {
-        setPersistReady(true);
-      });
+      queueMicrotask(() => setPersistReady(true));
       return;
     }
     if (p.hasHydrated()) {
-      queueMicrotask(() => {
-        setPersistReady(true);
-      });
+      queueMicrotask(() => setPersistReady(true));
       return;
     }
     const unsub = p.onFinishHydration(() => {
-      queueMicrotask(() => {
-        setPersistReady(true);
-      });
+      queueMicrotask(() => setPersistReady(true));
     });
     return unsub;
   }, []);
 
   useEffect(() => {
-    if (!persistReady) return;
+    if (pathname) setLastPath(pathname);
+  }, [pathname, setLastPath]);
+
+  useEffect(() => {
+    if (!persistReady || !authBootstrapDone) return;
     if (!isAuthenticated) {
-      router.replace("/login");
+      const next = `${pathname}${typeof window !== "undefined" ? window.location.search : ""}`;
+      router.replace(`/login?next=${encodeURIComponent(next)}`);
       return;
     }
     void loadProfile();
-  }, [persistReady, isAuthenticated, loadProfile, router]);
+  }, [persistReady, authBootstrapDone, isAuthenticated, loadProfile, pathname, router]);
 
-  if (!persistReady) {
+  if (!persistReady || !authBootstrapDone) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-4">
         <Skeleton className="h-8 w-48" />
-        <p className="text-sm text-muted-foreground">Restoring session…</p>
+        <p className="text-sm text-muted-foreground">Preparing workspace…</p>
       </div>
     );
   }
@@ -171,46 +84,51 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const closeMobile = () => setMobileNavOpen(false);
+  const title = moduleTitleFromPath(pathname);
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="hidden min-h-screen w-56 shrink-0 flex-col border-r bg-card md:flex">
-        <BrandBlock />
-        <ScrollArea className="min-h-0 flex-1">
-          <NavLinks pathname={pathname} />
-        </ScrollArea>
-        <SidebarFooter />
-      </aside>
+    <div className="relative flex min-h-screen flex-col bg-background text-foreground">
+      <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+          <div className="flex min-w-0 items-baseline gap-3">
+            <Link href="/dashboard" className="shrink-0 text-sm font-semibold tracking-tight">
+              Planner
+            </Link>
+            <span className="hidden text-muted-foreground sm:inline">/</span>
+            <h1 className="truncate text-sm font-medium text-muted-foreground sm:text-base">{title}</h1>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link href="/" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "hidden sm:inline-flex")}>
+              Home
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  "max-w-[12rem] gap-1 font-normal"
+                )}
+              >
+                <span className="truncate">{user?.email}</span>
+                <ChevronDownIcon className="size-4 opacity-60" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-56" sideOffset={6}>
+                <DropdownMenuItem onClick={() => router.push("/dashboard")}>Overview</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/finance")}>Finance</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" onClick={() => void signOut()}>
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </header>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
-          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-            <SheetTrigger
-              type="button"
-              aria-label="Open menu"
-              className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
-            >
-              <MenuIcon className="size-5" />
-            </SheetTrigger>
-            <SheetContent side="left" className="flex w-[min(100%,20rem)] flex-col gap-0 p-0">
-              <SheetHeader className="border-b px-4 py-4 text-left">
-                <SheetTitle className="font-semibold">Planner</SheetTitle>
-              </SheetHeader>
-              <ScrollArea className="min-h-0 flex-1">
-                <NavLinks pathname={pathname} onNavigate={closeMobile} className="pt-2" />
-              </ScrollArea>
-              <Separator />
-              <SidebarFooter onNavigate={closeMobile} />
-            </SheetContent>
-          </Sheet>
-          <span className="truncate text-sm font-medium">Menu</span>
-        </header>
+      <main className="flex-1 pb-24 pt-2 sm:pb-28">
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>
+      </main>
 
-        <main className="flex-1 overflow-auto">
-          <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>
-        </main>
-      </div>
+      <PlannerLauncher />
     </div>
   );
 }

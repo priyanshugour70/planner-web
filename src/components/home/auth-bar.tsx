@@ -19,7 +19,7 @@ import { ChevronDownIcon } from "lucide-react";
 
 export function AuthBar() {
   const [mounted, setMounted] = useState(false);
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, isAuthenticated, signOut, authBootstrapDone } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export function AuthBar() {
     });
   }, []);
 
-  if (!mounted) {
+  if (!mounted || !authBootstrapDone) {
     return (
       <div className="flex h-9 min-w-[200px] items-center justify-end gap-2" aria-busy="true" aria-label="Account">
         <Skeleton className="h-8 w-20" />

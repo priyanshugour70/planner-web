@@ -1,12 +1,16 @@
+import type { RateLimitResult, RateLimiter } from "@/lib/rate-limit/types";
+
 type Bucket = { count: number; resetAt: number };
 
 const buckets = new Map<string, Bucket>();
+
+export const memoryRateLimiter: RateLimiter = checkRateLimit;
 
 export function checkRateLimit(
   key: string,
   max: number,
   windowMs: number
-): { ok: true } | { ok: false; retryAfterMs: number } {
+): RateLimitResult {
   const now = Date.now();
   const bucket = buckets.get(key);
   if (!bucket || now > bucket.resetAt) {

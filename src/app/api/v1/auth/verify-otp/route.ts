@@ -1,4 +1,7 @@
-import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
+import { buildRefreshSetCookie } from "@/lib/auth/refresh-cookie";
+import { jsonSuccess, withSetCookies } from "@/lib/api/response-builder";
+import { withApiRoute } from "@/lib/api/with-api-route";
+import { getServerEnv } from "@/lib/config/server-env";
 import * as Auth from "@/server/auth/auth-service";
 import { verifyOtpBodySchema } from "@/server/auth/validators";
 
@@ -12,6 +15,12 @@ export const POST = withApiRoute(
   },
   async ({ body, requestId }) => {
     const data = await Auth.verifyOtp(body);
+    if ("accessToken" in data && "refreshToken" in data && data.refreshToken) {
+      const env = getServerEnv();
+      const { refreshToken, ...publicData } = data;
+      const res = jsonSuccess(requestId, publicData, { message: "OTP processed" });
+      return withSetCookies(res, [buildRefreshSetCookie(env, refreshToken)]);
+    }
     return jsonSuccess(requestId, data, { message: "OTP processed" });
   }
 );

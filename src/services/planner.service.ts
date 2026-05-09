@@ -11,6 +11,7 @@ import type {
   PlannerSummaryDTO,
   TaskDTO,
   TransactionDTO,
+  FinanceSummaryDTO,
 } from "@/types/planner";
 import type { APIEnvelope } from "@/types/api-response";
 
@@ -127,8 +128,17 @@ export async function deleteBudget(id: string): Promise<APIEnvelope<{ ok: true }
   return apiRequest<{ ok: true }>(`/planner/budgets/${id}`, { method: "DELETE" });
 }
 
-export async function fetchTransactions(from?: string, to?: string): Promise<APIEnvelope<TransactionDTO[]>> {
-  return apiRequest<TransactionDTO[]>(`/planner/transactions${q({ from, to })}`);
+export async function fetchTransactions(opts?: {
+  from?: string;
+  to?: string;
+  limit?: string;
+  cursor?: string;
+}): Promise<APIEnvelope<TransactionDTO[]>> {
+  return apiRequest<TransactionDTO[]>(`/planner/transactions${q(opts ?? {})}`);
+}
+
+export async function fetchFinanceSummary(): Promise<APIEnvelope<FinanceSummaryDTO>> {
+  return apiRequest<FinanceSummaryDTO>("/planner/finance/summary");
 }
 
 export async function createTransaction(

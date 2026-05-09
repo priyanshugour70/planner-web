@@ -1,4 +1,8 @@
-import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
+import { buildRefreshSetCookie, readRefreshTokenFromCookie } from "@/lib/auth/refresh-cookie";
+import { jsonSuccess, withSetCookies } from "@/lib/api/response-builder";
+import { withApiRoute } from "@/lib/api/with-api-route";
+import { getServerEnv } from "@/lib/config/server-env";
+import { assertRefreshOriginAllowed } from "@/lib/http/safe-origin";
 import * as Auth from "@/server/auth/auth-service";
 import { refreshBodySchema } from "@/server/auth/validators";
 
@@ -10,8 +14,14 @@ export const POST = withApiRoute(
     rateLimit: { max: 120 },
     parseBody: refreshBodySchema,
   },
-  async ({ body, requestId }) => {
-    const data = await Auth.refresh(body);
-    return jsonSuccess(requestId, data, { message: "Token refreshed" });
+  async ({ body, requestId, req }) => {
+    assertRefreshOriginAllowed(req);
+    const env = getServerEnv();
+    const fromCookie = readRefreshTokenFromCookie(req.headers.get("cookie"), env);
+    const fromBody = body.refreshToken?.trim();
+    const data = await Auth.refresh({ refreshToken: fromCookie ?? fromBody ?? null });
+    const { refreshToken, ...publicData } = data;
+    const res = jsonSuccess(requestId, publicData, { message: "Token refreshed" });
+    return withSetCookies(res, [buildRefreshSetCookie(env, refreshToken)]);
   }
 );

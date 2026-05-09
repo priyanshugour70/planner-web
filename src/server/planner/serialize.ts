@@ -61,6 +61,11 @@ export interface TransactionRow {
   note: string | null;
   occurred_on: Date;
   created_at: Date;
+  merchant?: string | null;
+  payment_method?: string | null;
+  tags?: string[] | null;
+  account_id?: bigint | null;
+  category_id?: bigint | null;
 }
 
 export interface HabitRow {
@@ -205,6 +210,11 @@ export function serializeTransaction(r: TransactionRow) {
     note: r.note,
     occurredOn: isoDate(r.occurred_on),
     createdAt: iso(r.created_at),
+    merchant: r.merchant ?? null,
+    paymentMethod: r.payment_method ?? null,
+    tags: r.tags ?? [],
+    accountId: r.account_id != null ? String(r.account_id) : null,
+    categoryId: r.category_id != null ? String(r.category_id) : null,
   };
 }
 
