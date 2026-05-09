@@ -1,4 +1,4 @@
-import { JournalView } from "@/components/planner/journal-view";
+import { JournalView } from "@/modules/journal/components/journal-view";
 
 export default function JournalPage() {
   return <JournalView />;

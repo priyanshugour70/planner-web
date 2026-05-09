@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Planner — goals, tasks, finance, habits, journal, notes & calendar",
   description:
-    "A structured workspace with secure auth, PostgreSQL-backed modules, and REST APIs. Plan goals, ship tasks, track money, build habits, journal, take notes, and live on a calendar.",
+    "Planner is the product: a calm workspace with dedicated modules (goals, tasks, finance, habits, journal, notes, calendar), secure auth, PostgreSQL, and REST APIs.",
 };
 
 export default function RootLayout({

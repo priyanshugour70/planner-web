@@ -2,9 +2,9 @@ import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
 import * as Auth from "@/server/auth/auth-service";
 import { HttpError } from "@/server/auth/http-error";
-import { bigIntPathId } from "@/server/planner/path-ids";
-import { journalPatchSchema } from "@/server/planner/schemas";
-import { serializeJournal, type JournalRow } from "@/server/planner/serialize";
+import { bigIntPathId } from "@/modules/shared/server/path-ids";
+import { journalPatchSchema } from "@/modules/journal/server/schemas";
+import { serializeJournal, type JournalRow } from "@/modules/journal/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
 
 const re = /\/planner\/journal\/(\d+)\/?$/;

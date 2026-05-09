@@ -5,7 +5,7 @@ import { useCallback, useEffect } from "react";
 import { Command } from "cmdk";
 import { SearchIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { PLANNER_MODULES } from "@/lib/nav/modules";
+import { WORKSPACE_MODULES } from "@/lib/nav/modules";
 import { cn } from "@/lib/utils";
 
 export function CommandPalette({
@@ -43,12 +43,12 @@ export function CommandPalette({
         className="top-[15%] max-w-lg translate-y-0 gap-0 overflow-hidden p-0 sm:top-[12%]"
         aria-describedby={undefined}
       >
-        <DialogTitle className="sr-only">Jump to module</DialogTitle>
-        <Command className="rounded-lg border-0 bg-popover" shouldFilter label="Modules">
+        <DialogTitle className="sr-only">Jump to a workspace module</DialogTitle>
+        <Command className="rounded-lg border-0 bg-popover" shouldFilter label="Workspace modules">
           <div className="flex items-center border-b px-3">
             <SearchIcon className="mr-2 size-4 shrink-0 text-muted-foreground" aria-hidden />
             <Command.Input
-              placeholder="Search modules…"
+              placeholder="Search workspace modules…"
               className="flex h-11 w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
             />
             <kbd className="hidden shrink-0 rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline">
@@ -58,10 +58,10 @@ export function CommandPalette({
           <Command.List className="max-h-72 overflow-y-auto p-1">
             <Command.Empty className="px-3 py-6 text-center text-sm text-muted-foreground">No matches.</Command.Empty>
             <Command.Group
-              heading="Modules"
+              heading="Workspace modules"
               className="text-xs font-medium text-muted-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5"
             >
-              {PLANNER_MODULES.map((m) => (
+              {WORKSPACE_MODULES.map((m) => (
                 <Command.Item
                   key={m.href}
                   value={`${m.label} ${m.keywords}`}

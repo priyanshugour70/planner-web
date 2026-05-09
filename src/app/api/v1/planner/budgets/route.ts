@@ -1,8 +1,8 @@
 import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
 import * as Auth from "@/server/auth/auth-service";
-import { budgetCreateSchema, parseAmount } from "@/server/planner/schemas";
-import { serializeBudget, type BudgetRow } from "@/server/planner/serialize";
+import { budgetCreateSchema, parseAmount } from "@/modules/finance/server/schemas";
+import { serializeBudget, type BudgetRow } from "@/modules/finance/server/serialize";
 import { HttpError } from "@/server/auth/http-error";
 import { ErrorCodes } from "@/types/api-error";
 

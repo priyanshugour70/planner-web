@@ -2,9 +2,9 @@ import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
 import * as Auth from "@/server/auth/auth-service";
 import { HttpError } from "@/server/auth/http-error";
-import { bigIntPathId } from "@/server/planner/path-ids";
-import { notePatchSchema } from "@/server/planner/schemas";
-import { serializeNote, type NoteRow } from "@/server/planner/serialize";
+import { bigIntPathId } from "@/modules/shared/server/path-ids";
+import { notePatchSchema } from "@/modules/notes/server/schemas";
+import { serializeNote, type NoteRow } from "@/modules/notes/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
 
 const re = /\/planner\/notes\/(\d+)\/?$/;

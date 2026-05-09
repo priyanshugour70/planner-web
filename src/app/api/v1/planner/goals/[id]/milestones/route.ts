@@ -2,8 +2,8 @@ import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
 import * as Auth from "@/server/auth/auth-service";
 import { HttpError } from "@/server/auth/http-error";
-import { milestoneCreateSchema } from "@/server/planner/schemas";
-import { serializeMilestone, type MilestoneRow } from "@/server/planner/serialize";
+import { milestoneCreateSchema } from "@/modules/goals/server/schemas";
+import { serializeMilestone, type MilestoneRow } from "@/modules/goals/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
 
 const listRe = /\/planner\/goals\/(\d+)\/milestones\/?$/;

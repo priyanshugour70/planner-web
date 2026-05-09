@@ -2,8 +2,8 @@ import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
 import * as Auth from "@/server/auth/auth-service";
 import { HttpError } from "@/server/auth/http-error";
-import { calendarEventCreateSchema } from "@/server/planner/schemas";
-import { serializeCalendarEvent, type CalendarEventRow } from "@/server/planner/serialize";
+import { calendarEventCreateSchema } from "@/modules/calendar/server/schemas";
+import { serializeCalendarEvent, type CalendarEventRow } from "@/modules/calendar/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
 import { z } from "zod";
 

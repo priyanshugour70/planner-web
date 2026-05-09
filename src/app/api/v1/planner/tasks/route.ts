@@ -2,8 +2,8 @@ import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
 import * as Auth from "@/server/auth/auth-service";
 import { HttpError } from "@/server/auth/http-error";
-import { taskCreateSchema, taskStatusSchema } from "@/server/planner/schemas";
-import { serializeTask, type TaskRow } from "@/server/planner/serialize";
+import { taskCreateSchema, taskStatusSchema } from "@/modules/tasks/server/schemas";
+import { serializeTask, type TaskRow } from "@/modules/tasks/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
 import { z } from "zod";
 

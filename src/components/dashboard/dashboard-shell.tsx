@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
-import { PlannerLauncher } from "@/components/nav/planner-launcher";
+import { ModuleLauncher } from "@/components/nav/module-launcher";
 import { buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { moduleTitleFromPath } from "@/lib/nav/modules";
+import { PRODUCT_NAME } from "@/lib/product";
 import { useAuthStore } from "@/store/auth-store";
 import { cn } from "@/lib/utils";
 
@@ -91,8 +92,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
           <div className="flex min-w-0 items-baseline gap-3">
-            <Link href="/dashboard" className="shrink-0 text-sm font-semibold tracking-tight">
-              Planner
+            <Link
+              href="/dashboard"
+              className="shrink-0 text-sm font-semibold tracking-tight"
+              aria-label={`${PRODUCT_NAME} — overview`}
+            >
+              {PRODUCT_NAME}
             </Link>
             <span className="hidden text-muted-foreground sm:inline">/</span>
             <h1 className="truncate text-sm font-medium text-muted-foreground sm:text-base">{title}</h1>
@@ -128,7 +133,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>
       </main>
 
-      <PlannerLauncher />
+      <ModuleLauncher />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { PRODUCT_NAME } from "@/lib/product";
 
 const modules = [
   {
@@ -69,8 +70,8 @@ export function LandingPage() {
     <div className="flex min-h-full flex-col bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href="/" className="text-lg font-semibold tracking-tight">
-            Planner
+          <Link href="/" className="text-lg font-semibold tracking-tight" aria-label={`${PRODUCT_NAME} home`}>
+            {PRODUCT_NAME}
           </Link>
           <AuthBar />
         </div>
@@ -93,8 +94,8 @@ export function LandingPage() {
               One calm place for goals, money, habits, and everything between.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-              Planner is a structured workspace: seven modules, shared auth, and REST APIs you can grow
-              with—whether you live in the web app or wire your own clients.
+              {PRODUCT_NAME} is the product—a calm workspace with dedicated modules for goals, money, habits,
+              and more—plus shared auth and REST APIs you can grow with, in the web app or your own clients.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Link href="/signup" className={cn(buttonVariants({ size: "lg" }))}>
@@ -111,10 +112,9 @@ export function LandingPage() {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-          <h2 className="text-2xl font-semibold tracking-tight">Seven modules, one account</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Seven modules inside one {PRODUCT_NAME} account</h2>
           <p className="mt-2 max-w-2xl text-muted-foreground">
-            Each area has its own data model and APIs—use them together or start with what matters most
-            today.
+            Each module has its own data model and APIs—use them together or start with what matters most today.
           </p>
           <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {modules.map((m) => (
@@ -161,7 +161,7 @@ export function LandingPage() {
         <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6 sm:py-20">
           <h2 className="text-2xl font-semibold tracking-tight">Ready when you are</h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Sign up in a minute, land on the dashboard, and shape the modules around your real routines.
+            Sign up in a minute, open Overview, and shape each module around your real routines.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/signup" className={cn(buttonVariants({ size: "lg" }))}>
@@ -176,7 +176,7 @@ export function LandingPage() {
 
       <footer className="border-t bg-card py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground sm:flex-row sm:px-6">
-          <span suppressHydrationWarning>© {new Date().getFullYear()} Planner</span>
+          <span suppressHydrationWarning>© {new Date().getFullYear()} {PRODUCT_NAME}</span>
           <div className="flex gap-6">
             <Link href="/api-docs" className="hover:text-foreground">
               API

@@ -13,9 +13,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import * as Planner from "@/services/planner.service";
+import { fetchSummary } from "@/modules/overview/client/api";
+import { fetchFinanceSummary } from "@/modules/finance/client/api";
 import type { FinanceSummaryDTO, PlannerSummaryDTO } from "@/types/planner";
-import { PLANNER_MODULES } from "@/lib/nav/modules";
+import { WORKSPACE_MODULES } from "@/lib/nav/modules";
+import { PRODUCT_NAME } from "@/lib/product";
 import { cn } from "@/lib/utils";
 
 export function AuthenticatedHome() {
@@ -24,7 +26,7 @@ export function AuthenticatedHome() {
 
   useEffect(() => {
     void (async () => {
-      const [s, f] = await Promise.all([Planner.fetchSummary(), Planner.fetchFinanceSummary()]);
+      const [s, f] = await Promise.all([fetchSummary(), fetchFinanceSummary()]);
       if (s.success && s.data) setSummary(s.data);
       if (f.success && f.data) setFin(f.data);
     })();
@@ -34,8 +36,8 @@ export function AuthenticatedHome() {
     <div className="flex min-h-full flex-col bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href="/dashboard" className="text-lg font-semibold tracking-tight">
-            Planner
+          <Link href="/dashboard" className="text-lg font-semibold tracking-tight" aria-label={`${PRODUCT_NAME} home`}>
+            {PRODUCT_NAME}
           </Link>
           <AuthBar />
         </div>
@@ -117,7 +119,7 @@ export function AuthenticatedHome() {
         <section className="mx-auto max-w-6xl">
           <h2 className="text-lg font-semibold tracking-tight">Modules</h2>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {PLANNER_MODULES.filter((m) => m.href !== "/dashboard").map((m) => (
+            {WORKSPACE_MODULES.filter((m) => m.href !== "/dashboard").map((m) => (
               <li key={m.href}>
                 <Link href={m.href} className="block h-full">
                   <Card className="h-full transition-shadow hover:shadow-md">

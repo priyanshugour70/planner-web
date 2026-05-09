@@ -1,5 +1,5 @@
 import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
-import { computeFinanceSummary } from "@/server/finance/finance-analytics";
+import { computeFinanceSummary } from "@/modules/finance/server/analytics";
 import * as Auth from "@/server/auth/auth-service";
 
 export const GET = withApiRoute(

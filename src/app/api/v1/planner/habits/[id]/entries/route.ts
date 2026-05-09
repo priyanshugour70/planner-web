@@ -2,8 +2,8 @@ import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
 import * as Auth from "@/server/auth/auth-service";
 import { HttpError } from "@/server/auth/http-error";
-import { habitEntryCreateSchema } from "@/server/planner/schemas";
-import { serializeHabitEntry, type HabitEntryRow } from "@/server/planner/serialize";
+import { habitEntryCreateSchema } from "@/modules/habits/server/schemas";
+import { serializeHabitEntry, type HabitEntryRow } from "@/modules/habits/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
 
 const listRe = /\/planner\/habits\/(\d+)\/entries\/?$/;

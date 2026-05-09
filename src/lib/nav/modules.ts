@@ -1,10 +1,13 @@
-export type PlannerModule = {
+import { PRODUCT_NAME } from "@/lib/product";
+
+/** A first-class product module (Goals, Finance, Notes, …). Not the product itself. */
+export type WorkspaceModule = {
   href: string;
   label: string;
   keywords: string;
 };
 
-export const PLANNER_MODULES: readonly PlannerModule[] = [
+export const WORKSPACE_MODULES: readonly WorkspaceModule[] = [
   { href: "/dashboard", label: "Overview", keywords: "home summary dashboard" },
   { href: "/goals", label: "Goals", keywords: "milestones outcomes" },
   { href: "/tasks", label: "Tasks", keywords: "todo work" },
@@ -15,10 +18,13 @@ export const PLANNER_MODULES: readonly PlannerModule[] = [
   { href: "/calendar", label: "Calendar", keywords: "events schedule" },
 ] as const;
 
+/** Current module label for the shell chrome, or the product name when the route is not a module root. */
 export function moduleTitleFromPath(pathname: string | null): string {
-  if (!pathname) return "Planner";
-  const hit = PLANNER_MODULES.find((m) => m.href !== "/dashboard" && pathname.startsWith(m.href));
+  if (!pathname) return PRODUCT_NAME;
+  const hit = WORKSPACE_MODULES.find(
+    (m) => m.href !== "/dashboard" && pathname.startsWith(m.href)
+  );
   if (hit) return hit.label;
   if (pathname.startsWith("/dashboard")) return "Overview";
-  return "Planner";
+  return PRODUCT_NAME;
 }

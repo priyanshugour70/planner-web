@@ -2,8 +2,8 @@ import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
 import * as Auth from "@/server/auth/auth-service";
 import { HttpError } from "@/server/auth/http-error";
-import { habitCreateSchema } from "@/server/planner/schemas";
-import { serializeHabit, type HabitRow } from "@/server/planner/serialize";
+import { habitCreateSchema } from "@/modules/habits/server/schemas";
+import { serializeHabit, type HabitRow } from "@/modules/habits/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
 
 export const GET = withApiRoute(

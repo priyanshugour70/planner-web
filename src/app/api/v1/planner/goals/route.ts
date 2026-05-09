@@ -2,8 +2,8 @@ import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
 import * as Auth from "@/server/auth/auth-service";
 import { HttpError } from "@/server/auth/http-error";
-import { goalCreateSchema, goalStatusSchema } from "@/server/planner/schemas";
-import { serializeGoal, type GoalRow } from "@/server/planner/serialize";
+import { goalCreateSchema, goalStatusSchema } from "@/modules/goals/server/schemas";
+import { serializeGoal, type GoalRow } from "@/modules/goals/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
 import { z } from "zod";
 

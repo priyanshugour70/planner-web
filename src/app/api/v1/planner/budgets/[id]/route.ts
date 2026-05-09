@@ -2,9 +2,9 @@ import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
 import * as Auth from "@/server/auth/auth-service";
 import { HttpError } from "@/server/auth/http-error";
-import { bigIntPathId } from "@/server/planner/path-ids";
-import { budgetPatchSchema, parseAmount } from "@/server/planner/schemas";
-import { serializeBudget, type BudgetRow } from "@/server/planner/serialize";
+import { bigIntPathId } from "@/modules/shared/server/path-ids";
+import { budgetPatchSchema, parseAmount } from "@/modules/finance/server/schemas";
+import { serializeBudget, type BudgetRow } from "@/modules/finance/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
 
 const re = /\/planner\/budgets\/(\d+)\/?$/;

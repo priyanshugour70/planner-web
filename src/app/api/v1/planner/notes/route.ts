@@ -2,8 +2,8 @@ import { jsonSuccess, withApiRoute } from "@/lib/api/with-api-route";
 import { getSql } from "@/lib/db";
 import * as Auth from "@/server/auth/auth-service";
 import { HttpError } from "@/server/auth/http-error";
-import { noteCreateSchema } from "@/server/planner/schemas";
-import { serializeNote, type NoteRow } from "@/server/planner/serialize";
+import { noteCreateSchema } from "@/modules/notes/server/schemas";
+import { serializeNote, type NoteRow } from "@/modules/notes/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
 
 export const GET = withApiRoute(
