@@ -38,8 +38,11 @@ import {
   ArrowDownLeft,
   CreditCard,
   Landmark,
+  Pause,
   PiggyBank,
+  Play,
   Receipt,
+  Repeat,
   Sparkles,
   Target,
   TrendingDown,
@@ -60,6 +63,7 @@ import type {
   DebtObligationDTO,
   FinanceAccountDTO,
   FinanceCategoryDTO,
+  RecurringRuleDTO,
   TransactionDTO,
 } from "@/types/planner";
 
@@ -142,6 +146,7 @@ export function FinanceView() {
     accounts,
     categories,
     obligations,
+    recurringRules,
     summary,
     loading,
     createTx,
@@ -151,12 +156,19 @@ export function FinanceView() {
     updateBudget,
     removeBudget,
     createAccount,
+    updateAccount,
     deleteAccount,
     createCategory,
+    updateCategory,
     deleteCategory,
     createObligation,
+    updateObligation,
     deleteObligation,
     recordDebtPayment,
+    createRecurringRule,
+    updateRecurringRule,
+    deleteRecurringRule,
+    materializeRecurringDue,
     requestQuickAdd,
   } = useFinance();
 
@@ -300,6 +312,13 @@ export function FinanceView() {
               <ArrowDownLeft className="size-3.5 opacity-70" aria-hidden />
               Debt
             </TabsTrigger>
+            <TabsTrigger
+              value="recurring"
+              className="gap-1.5 rounded-xl px-3 py-2 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm sm:text-sm"
+            >
+              <Repeat className="size-3.5 opacity-70" aria-hidden />
+              EMI & recurring
+            </TabsTrigger>
           </TabsList>
         </ScrollArea>
         <TabsContent value="transactions" className="mt-6">
@@ -327,8 +346,10 @@ export function FinanceView() {
             accounts={accounts}
             categories={categories}
             onCreateAccount={createAccount}
+            onUpdateAccount={updateAccount}
             onDeleteAccount={deleteAccount}
             onCreateCategory={createCategory}
+            onUpdateCategory={updateCategory}
             onDeleteCategory={deleteCategory}
           />
         </TabsContent>
@@ -336,8 +357,18 @@ export function FinanceView() {
           <DebtPanel
             obligations={obligations}
             onCreate={createObligation}
+            onUpdate={updateObligation}
             onDelete={deleteObligation}
             onPay={recordDebtPayment}
+          />
+        </TabsContent>
+        <TabsContent value="recurring" className="mt-6">
+          <RecurringPanel
+            items={recurringRules}
+            onCreate={createRecurringRule}
+            onUpdate={updateRecurringRule}
+            onDelete={deleteRecurringRule}
+            onMaterialize={materializeRecurringDue}
           />
         </TabsContent>
       </Tabs>
@@ -419,6 +450,21 @@ export function FinanceView() {
               <span>
                 <span className="font-medium">Debt or receivable</span>
                 <span className="mt-0.5 block text-xs font-normal text-muted-foreground">Money you owe or someone owes you</span>
+              </span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start gap-2 py-3 text-left touch-manipulation"
+              onClick={() => {
+                setQuickMenuOpen(false);
+                requestQuickAdd("recurring");
+              }}
+            >
+              <Repeat className="size-4 shrink-0 opacity-70" aria-hidden />
+              <span>
+                <span className="font-medium">EMI or recurring charge</span>
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">Monthly template you can materialize into transactions</span>
               </span>
             </Button>
           </div>
@@ -1407,6 +1453,226 @@ function BudgetsPanel({
   );
 }
 
+function RecurringPanel({
+  items,
+  onCreate,
+  onUpdate,
+  onDelete,
+  onMaterialize,
+}: {
+  items: RecurringRuleDTO[];
+  onCreate: (input: Record<string, unknown>) => Promise<boolean>;
+  onUpdate: (id: string, input: Record<string, unknown>) => Promise<boolean>;
+  onDelete: (id: string) => Promise<boolean>;
+  onMaterialize: (body?: Record<string, unknown>) => Promise<boolean>;
+}) {
+  const [label, setLabel] = useState("");
+  const [templateKind, setTemplateKind] = useState<"expense" | "income">("expense");
+  const [templateAmount, setTemplateAmount] = useState("");
+  const [templateCategory, setTemplateCategory] = useState("");
+  const [nextRunOn, setNextRunOn] = useState(() => new Date().toISOString().slice(0, 10));
+
+  const recurringQuickIntent = useFinanceStore((s) => s.quickAddIntent);
+  const clearRecurringQuickIntent = useFinanceStore((s) => s.clearQuickAddIntent);
+  useEffect(() => {
+    if (recurringQuickIntent !== "recurring") return;
+    clearRecurringQuickIntent();
+    requestAnimationFrame(() => {
+      document.getElementById("finance-recurring-add")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("finance-quick-recurring-label")?.focus();
+    });
+  }, [recurringQuickIntent, clearRecurringQuickIntent]);
+
+  async function submitCreate(e: React.FormEvent) {
+    e.preventDefault();
+    const ok = await onCreate({
+      label: label.trim(),
+      templateKind,
+      templateAmount,
+      templateCategory: templateCategory.trim() || null,
+      cadence: "monthly",
+      nextRunOn,
+      active: true,
+    });
+    if (ok) {
+      setLabel("");
+      setTemplateKind("expense");
+      setTemplateAmount("");
+      setTemplateCategory("");
+      setNextRunOn(new Date().toISOString().slice(0, 10));
+    }
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Monthly templates become real transactions when you run Materialize due (through today, UTC), matching the mobile app.
+        </p>
+        <Button type="button" variant="secondary" className="touch-manipulation" onClick={() => void onMaterialize({})}>
+          Materialize due (through today)
+        </Button>
+      </div>
+
+      <Card id="finance-recurring-add" className="border-border/70 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-lg">New recurring / EMI</CardTitle>
+          <CardDescription className="text-pretty">Rent, loan EMI, salary, or any fixed monthly amount.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={(e) => void submitCreate(e)} className="grid gap-4 sm:grid-cols-2">
+            <Field className="sm:col-span-2">
+              <FieldLabel>Label</FieldLabel>
+              <FieldContent>
+                <Input
+                  id="finance-quick-recurring-label"
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  placeholder="Home loan EMI"
+                  required
+                />
+              </FieldContent>
+            </Field>
+            <Field>
+              <FieldLabel>Type</FieldLabel>
+              <FieldContent>
+                <Select value={templateKind} onValueChange={(v) => setTemplateKind(v === "income" ? "income" : "expense")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="start" sideOffset={4}>
+                    <SelectItem value="expense">Expense</SelectItem>
+                    <SelectItem value="income">Income</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+            </Field>
+            <Field>
+              <FieldLabel>Amount</FieldLabel>
+              <FieldContent>
+                <Input type="number" min="0" step="0.01" value={templateAmount} onChange={(e) => setTemplateAmount(e.target.value)} required />
+              </FieldContent>
+            </Field>
+            <Field className="sm:col-span-2">
+              <FieldLabel>Category label (optional)</FieldLabel>
+              <FieldContent>
+                <Input value={templateCategory} onChange={(e) => setTemplateCategory(e.target.value)} placeholder="Housing, salary…" />
+              </FieldContent>
+            </Field>
+            <Field className="sm:col-span-2">
+              <DatePickerField id="recurring-next-run" label="Next run" value={nextRunOn} onChange={setNextRunOn} />
+            </Field>
+            <div className="sm:col-span-2">
+              <Button type="submit" size="lg" className="h-11 w-full touch-manipulation sm:h-9 sm:w-auto">
+                Save rule
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-3 md:hidden">
+        {items.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">No recurring rules yet.</CardContent>
+          </Card>
+        ) : null}
+        {items.map((item) => (
+          <Card
+            key={item.id}
+            className={cn(
+              "overflow-hidden shadow-sm",
+              item.templateKind === "income"
+                ? "border border-emerald-500/20 bg-emerald-500/[0.06] dark:bg-emerald-500/[0.09]"
+                : "border border-rose-500/20 bg-rose-500/[0.06] dark:bg-rose-500/[0.09]"
+            )}
+          >
+            <CardContent className="space-y-3 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-semibold leading-snug">{item.label}</p>
+                  <p className="mt-1 text-xs capitalize text-muted-foreground">
+                    {item.templateKind} · {item.cadence}
+                  </p>
+                  <p className="mt-2 text-lg font-semibold tabular-nums text-primary">{formatInrAmount(item.templateAmount)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Next run {formatDisplayDate(item.nextRunOn)}
+                    {item.active ? "" : " · paused"}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0 touch-manipulation"
+                  aria-label={item.active ? "Pause rule" : "Resume rule"}
+                  onClick={() => void onUpdate(item.id, { active: !item.active })}
+                >
+                  {item.active ? <Pause className="size-4" aria-hidden /> : <Play className="size-4" aria-hidden />}
+                </Button>
+              </div>
+              <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void onDelete(item.id)}>
+                Delete
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="hidden border-border/70 shadow-sm ring-1 ring-black/[0.03] dark:ring-white/[0.05] md:block">
+        <CardHeader className="pb-0">
+          <CardTitle className="text-base">Rules</CardTitle>
+          <CardDescription>Toggle pause without losing history. Materialize posts due items through today.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0 pt-2">
+          <ScrollArea className="h-[min(22rem,50vh)] w-full">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Label</TableHead>
+                  <TableHead className="w-24">Kind</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="w-36">Next run</TableHead>
+                  <TableHead className="w-28">Active</TableHead>
+                  <TableHead className="w-40 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                      No recurring rules yet.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+                {items.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.label}</TableCell>
+                    <TableCell className="capitalize">{item.templateKind}</TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">{formatInrAmount(item.templateAmount)}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDisplayDate(item.nextRunOn)}</TableCell>
+                    <TableCell>{item.active ? "Yes" : "Paused"}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button type="button" variant="outline" size="sm" onClick={() => void onUpdate(item.id, { active: !item.active })}>
+                          {item.active ? "Pause" : "Resume"}
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void onDelete(item.id)}>
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function accountKindIcon(kind: string): ComponentType<{ className?: string; "aria-hidden"?: boolean }> {
   if (kind === "credit") return CreditCard;
   if (kind === "savings") return PiggyBank;
@@ -1419,15 +1685,19 @@ function AccountsCategoriesPanel({
   accounts,
   categories,
   onCreateAccount,
+  onUpdateAccount,
   onDeleteAccount,
   onCreateCategory,
+  onUpdateCategory,
   onDeleteCategory,
 }: {
   accounts: FinanceAccountDTO[];
   categories: FinanceCategoryDTO[];
   onCreateAccount: (input: Record<string, unknown>) => Promise<boolean>;
+  onUpdateAccount: (id: string, input: Record<string, unknown>) => Promise<boolean>;
   onDeleteAccount: (id: string) => Promise<boolean>;
   onCreateCategory: (input: Record<string, unknown>) => Promise<boolean>;
+  onUpdateCategory: (id: string, input: Record<string, unknown>) => Promise<boolean>;
   onDeleteCategory: (id: string) => Promise<boolean>;
 }) {
   const [accName, setAccName] = useState("");
@@ -1435,6 +1705,14 @@ function AccountsCategoriesPanel({
   const [catName, setCatName] = useState("");
   const [catKind, setCatKind] = useState("expense");
   const [parentId, setParentId] = useState<string>(NONE);
+
+  const [editAccount, setEditAccount] = useState<FinanceAccountDTO | null>(null);
+  const [eaName, setEaName] = useState("");
+  const [eaKind, setEaKind] = useState("checking");
+  const [editCategory, setEditCategory] = useState<FinanceCategoryDTO | null>(null);
+  const [ecName, setEcName] = useState("");
+  const [ecKind, setEcKind] = useState("expense");
+  const [ecParentId, setEcParentId] = useState<string>(NONE);
 
   const [accQuery, setAccQuery] = useState("");
   const [catQuery, setCatQuery] = useState("");
@@ -1466,7 +1744,8 @@ function AccountsCategoriesPanel({
   }, [accountsQuickIntent, clearAccountsQuickIntent]);
 
   return (
-    <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+    <>
+      <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
       <Card id="finance-accounts-add" className="border-border/70 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
         <CardHeader className="space-y-1">
           <CardTitle className="text-lg">Accounts</CardTitle>
@@ -1525,7 +1804,7 @@ function AccountsCategoriesPanel({
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Account</TableHead>
                   <TableHead className="w-28">Kind</TableHead>
-                  <TableHead className="w-24 text-right" />
+                  <TableHead className="w-36 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1560,9 +1839,23 @@ function AccountsCategoriesPanel({
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void onDeleteAccount(a.id)}>
-                          Delete
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditAccount(a);
+                              setEaName(a.name);
+                              setEaKind(a.kind);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void onDeleteAccount(a.id)}>
+                            Delete
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -1675,7 +1968,7 @@ function AccountsCategoriesPanel({
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Name</TableHead>
                   <TableHead className="w-28">Kind</TableHead>
-                  <TableHead className="w-24 text-right" />
+                  <TableHead className="w-36 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1708,9 +2001,24 @@ function AccountsCategoriesPanel({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void onDeleteCategory(c.id)}>
-                        Delete
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditCategory(c);
+                            setEcName(c.name);
+                            setEcKind(c.kind);
+                            setEcParentId(c.parentId ?? NONE);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void onDeleteCategory(c.id)}>
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1719,18 +2027,147 @@ function AccountsCategoriesPanel({
           </ScrollArea>
         </CardContent>
       </Card>
-    </div>
+      </div>
+
+      <Dialog
+        open={editAccount !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditAccount(null);
+        }}
+      >
+        <DialogContent className="max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Edit account</DialogTitle>
+            <DialogDescription>Update how this wallet appears on transactions.</DialogDescription>
+          </DialogHeader>
+          <form
+            className="grid gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void (async () => {
+                if (!editAccount) return;
+                const ok = await onUpdateAccount(editAccount.id, { name: eaName.trim(), kind: eaKind });
+                if (ok) setEditAccount(null);
+              })();
+            }}
+          >
+            <Field>
+              <FieldLabel>Name</FieldLabel>
+              <FieldContent>
+                <Input value={eaName} onChange={(e) => setEaName(e.target.value)} required />
+              </FieldContent>
+            </Field>
+            <Field>
+              <FieldLabel>Kind</FieldLabel>
+              <FieldContent>
+                <Select value={eaKind} onValueChange={(v) => setEaKind(v ?? "checking")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="start" sideOffset={4}>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="checking">Checking</SelectItem>
+                    <SelectItem value="savings">Savings</SelectItem>
+                    <SelectItem value="credit">Credit</SelectItem>
+                    <SelectItem value="investment">Investment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+            </Field>
+            <DialogFooter>
+              <Button type="submit">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={editCategory !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditCategory(null);
+        }}
+      >
+        <DialogContent className="max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Edit category</DialogTitle>
+            <DialogDescription>Rename, change kind, or nest under another category.</DialogDescription>
+          </DialogHeader>
+          <form
+            className="grid gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void (async () => {
+                if (!editCategory) return;
+                const ok = await onUpdateCategory(editCategory.id, {
+                  name: ecName.trim(),
+                  kind: ecKind,
+                  parentId: ecParentId === NONE ? null : ecParentId,
+                });
+                if (ok) setEditCategory(null);
+              })();
+            }}
+          >
+            <Field>
+              <FieldLabel>Name</FieldLabel>
+              <FieldContent>
+                <Input value={ecName} onChange={(e) => setEcName(e.target.value)} required />
+              </FieldContent>
+            </Field>
+            <Field>
+              <FieldLabel>Kind</FieldLabel>
+              <FieldContent>
+                <Select value={ecKind} onValueChange={(v) => setEcKind(v ?? "expense")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="start" sideOffset={4}>
+                    <SelectItem value="expense">Expense</SelectItem>
+                    <SelectItem value="income">Income</SelectItem>
+                    <SelectItem value="both">Both</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+            </Field>
+            <Field>
+              <FieldLabel>Parent</FieldLabel>
+              <FieldContent>
+                <Select value={ecParentId} onValueChange={(v) => setEcParentId(v ?? NONE)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent align="start" sideOffset={4}>
+                    <SelectItem value={NONE}>None</SelectItem>
+                    {categories
+                      .filter((x) => x.id !== editCategory?.id)
+                      .map((x) => (
+                        <SelectItem key={x.id} value={x.id}>
+                          {x.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+            </Field>
+            <DialogFooter>
+              <Button type="submit">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
 function DebtPanel({
   obligations,
   onCreate,
+  onUpdate,
   onDelete,
   onPay,
 }: {
   obligations: DebtObligationDTO[];
   onCreate: (input: Record<string, unknown>) => Promise<boolean>;
+  onUpdate: (id: string, input: Record<string, unknown>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   onPay: (obligationId: string, amount: number, note?: string) => Promise<boolean>;
 }) {
@@ -1744,6 +2181,11 @@ function DebtPanel({
   const [payTarget, setPayTarget] = useState<DebtObligationDTO | null>(null);
   const [payAmount, setPayAmount] = useState("");
   const [payNote, setPayNote] = useState("");
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<DebtObligationDTO | null>(null);
+  const [editStatus, setEditStatus] = useState("open");
+  const [editNotes, setEditNotes] = useState("");
 
   const [debtDir, setDebtDir] = useState<"all" | "lent" | "owed">("all");
   const [debtStatus, setDebtStatus] = useState<"all" | "open" | "closed">("all");
@@ -1777,6 +2219,20 @@ function DebtPanel({
     setPayAmount("");
     setPayNote("");
     setPayOpen(true);
+  }
+
+  function openEditObligation(o: DebtObligationDTO) {
+    setEditTarget(o);
+    setEditStatus(o.status);
+    setEditNotes(o.notes ?? "");
+    setEditOpen(true);
+  }
+
+  async function submitEditObligation(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editTarget) return;
+    const ok = await onUpdate(editTarget.id, { status: editStatus, notes: editNotes.trim() || null });
+    if (ok) setEditOpen(false);
   }
 
   async function submitCreate(e: React.FormEvent) {
@@ -1979,11 +2435,14 @@ function DebtPanel({
                 <span>·</span>
                 <span className="capitalize">{o.status}</span>
               </div>
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" size="sm" className="flex-1 touch-manipulation" disabled={o.status === "closed"} onClick={() => openPay(o)}>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="outline" size="sm" className="min-w-0 flex-1 touch-manipulation" disabled={o.status === "closed"} onClick={() => openPay(o)}>
                   Pay
                 </Button>
-                <Button type="button" variant="ghost" size="sm" className="flex-1 touch-manipulation text-destructive" onClick={() => void onDelete(o.id)}>
+                <Button type="button" variant="outline" size="sm" className="min-w-0 flex-1 touch-manipulation" onClick={() => openEditObligation(o)}>
+                  Edit
+                </Button>
+                <Button type="button" variant="ghost" size="sm" className="min-w-0 flex-1 touch-manipulation text-destructive" onClick={() => void onDelete(o.id)}>
                   Delete
                 </Button>
               </div>
@@ -2007,7 +2466,7 @@ function DebtPanel({
                   <TableHead className="text-right">Balance</TableHead>
                   <TableHead className="w-28">Status</TableHead>
                   <TableHead className="w-32">Due</TableHead>
-                  <TableHead className="w-44 text-right">Actions</TableHead>
+                  <TableHead className="w-52 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -2043,9 +2502,12 @@ function DebtPanel({
                     <TableCell className="capitalize">{o.status}</TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDisplayDate(o.dueDate)}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
+                      <div className="flex flex-wrap justify-end gap-1">
                         <Button type="button" variant="outline" size="sm" disabled={o.status === "closed"} onClick={() => openPay(o)}>
                           Pay
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => openEditObligation(o)}>
+                          Edit
                         </Button>
                         <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => void onDelete(o.id)}>
                           Delete
@@ -2059,6 +2521,42 @@ function DebtPanel({
           </ScrollArea>
         </CardContent>
       </Card>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Edit obligation</DialogTitle>
+            <DialogDescription>
+              {editTarget ? `Update status or notes for ${editTarget.counterparty}.` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => void submitEditObligation(e)} className="grid gap-3">
+            <Field>
+              <FieldLabel>Status</FieldLabel>
+              <FieldContent>
+                <Select value={editStatus} onValueChange={(v) => setEditStatus(v ?? "open")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="start" sideOffset={4}>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+            </Field>
+            <Field>
+              <FieldLabel>Notes</FieldLabel>
+              <FieldContent>
+                <Input value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
+              </FieldContent>
+            </Field>
+            <DialogFooter>
+              <Button type="submit">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={payOpen} onOpenChange={setPayOpen}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-sm" showCloseButton>

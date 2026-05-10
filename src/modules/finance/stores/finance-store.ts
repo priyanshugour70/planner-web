@@ -10,12 +10,13 @@ import type {
   FinanceAccountDTO,
   FinanceCategoryDTO,
   FinanceSummaryDTO,
+  RecurringRuleDTO,
   TransactionDTO,
 } from "@/types/planner";
 
-export type FinanceTab = "transactions" | "budgets" | "accounts" | "debt";
+export type FinanceTab = "transactions" | "budgets" | "accounts" | "debt" | "recurring";
 
-export type FinanceQuickAddIntent = "transaction" | "budget" | "debt" | "accounts" | null;
+export type FinanceQuickAddIntent = "transaction" | "budget" | "debt" | "accounts" | "recurring" | null;
 
 export type FinanceStore = {
   tab: FinanceTab;
@@ -27,6 +28,7 @@ export type FinanceStore = {
   accounts: FinanceAccountDTO[];
   categories: FinanceCategoryDTO[];
   obligations: DebtObligationDTO[];
+  recurringRules: RecurringRuleDTO[];
   summary: FinanceSummaryDTO | null;
   loading: boolean;
   setTab: (tab: FinanceTab) => void;
@@ -50,6 +52,10 @@ export type FinanceStore = {
   updateObligation: (id: string, input: Record<string, unknown>) => Promise<boolean>;
   deleteObligation: (id: string) => Promise<boolean>;
   recordDebtPayment: (obligationId: string, amount: number, note?: string) => Promise<boolean>;
+  createRecurringRule: (input: Record<string, unknown>) => Promise<boolean>;
+  updateRecurringRule: (id: string, input: Record<string, unknown>) => Promise<boolean>;
+  deleteRecurringRule: (id: string) => Promise<boolean>;
+  materializeRecurringDue: (body?: Record<string, unknown>) => Promise<boolean>;
 };
 
 export const useFinanceStore = create<FinanceStore>((set, get) => ({
@@ -62,6 +68,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
   accounts: [],
   categories: [],
   obligations: [],
+  recurringRules: [],
   summary: null,
   loading: true,
 
@@ -72,7 +79,15 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
   requestQuickAdd: (intent) =>
     set(() => {
       const tab: FinanceTab =
-        intent === "transaction" ? "transactions" : intent === "budget" ? "budgets" : intent === "debt" ? "debt" : "accounts";
+        intent === "transaction"
+          ? "transactions"
+          : intent === "budget"
+            ? "budgets"
+            : intent === "debt"
+              ? "debt"
+              : intent === "recurring"
+                ? "recurring"
+                : "accounts";
       return { tab, quickAddIntent: intent };
     }),
   clearQuickAddIntent: () => set({ quickAddIntent: null }),
@@ -86,6 +101,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
       acc,
       cat,
       debt,
+      rec,
       fs,
     ] = await Promise.all([
       FinanceService.fetchTransactions({ limit: "500" }),
@@ -94,6 +110,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
       FinanceService.fetchFinanceAccounts(),
       FinanceService.fetchFinanceCategories(),
       FinanceService.fetchDebtObligations(),
+      FinanceService.fetchRecurringRules(),
       FinanceService.fetchFinanceSummary(),
     ]);
 
@@ -103,6 +120,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
     if (!acc.success) toast.error(acc.message || "Could not load accounts");
     if (!cat.success) toast.error(cat.message || "Could not load categories");
     if (!debt.success) toast.error(debt.message || "Could not load debt");
+    if (!rec.success) toast.error(rec.message || "Could not load recurring rules");
     if (!fs.success) toast.error(fs.message || "Could not load finance summary");
 
     set({
@@ -113,6 +131,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
       accounts: acc.success && acc.data ? acc.data : [],
       categories: cat.success && cat.data ? cat.data : [],
       obligations: debt.success && debt.data ? debt.data : [],
+      recurringRules: rec.success && rec.data ? rec.data : [],
       summary: fs.success && fs.data ? fs.data : null,
     });
   },
@@ -293,6 +312,52 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
       return false;
     }
     toast.success("Payment recorded");
+    await get().load();
+    return true;
+  },
+
+  createRecurringRule: async (input) => {
+    const res = await FinanceService.createRecurringRule(input);
+    if (!res.success) {
+      toast.error(res.message || "Could not create recurring rule");
+      return false;
+    }
+    toast.success("Recurring rule saved");
+    await get().load();
+    return true;
+  },
+
+  updateRecurringRule: async (id, input) => {
+    const res = await FinanceService.updateRecurringRule(id, input);
+    if (!res.success) {
+      toast.error(res.message || "Could not update recurring rule");
+      return false;
+    }
+    toast.success("Recurring rule updated");
+    await get().load();
+    return true;
+  },
+
+  deleteRecurringRule: async (id) => {
+    if (!confirm("Delete this recurring rule?")) return false;
+    const res = await FinanceService.deleteRecurringRule(id);
+    if (!res.success) {
+      toast.error(res.message || "Could not delete recurring rule");
+      return false;
+    }
+    toast.success("Recurring rule removed");
+    await get().load();
+    return true;
+  },
+
+  materializeRecurringDue: async (body) => {
+    const res = await FinanceService.materializeRecurringDue(body);
+    if (!res.success) {
+      toast.error(res.message || "Could not materialize recurring rules");
+      return false;
+    }
+    const n = res.data?.createdTransactionIds?.length ?? 0;
+    toast.success(n ? `Created ${n} transaction(s).` : "No due rules to materialize.");
     await get().load();
     return true;
   },
