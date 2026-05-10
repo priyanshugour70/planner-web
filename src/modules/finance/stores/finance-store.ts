@@ -15,9 +15,12 @@ import type {
 
 export type FinanceTab = "transactions" | "budgets" | "accounts" | "debt";
 
+export type FinanceQuickAddIntent = "transaction" | "budget" | "debt" | "accounts" | null;
+
 export type FinanceStore = {
   tab: FinanceTab;
   intelOpen: boolean;
+  quickAddIntent: FinanceQuickAddIntent;
   transactions: TransactionDTO[];
   budgets: BudgetDTO[];
   budgetRollups: BudgetRollupDTO[];
@@ -28,6 +31,8 @@ export type FinanceStore = {
   loading: boolean;
   setTab: (tab: FinanceTab) => void;
   setIntelOpen: (open: boolean | ((v: boolean) => boolean)) => void;
+  requestQuickAdd: (intent: Exclude<FinanceQuickAddIntent, null>) => void;
+  clearQuickAddIntent: () => void;
   load: () => Promise<void>;
   createTx: (input: Record<string, unknown>) => Promise<boolean>;
   updateTx: (id: string, input: Record<string, unknown>) => Promise<boolean>;
@@ -50,6 +55,7 @@ export type FinanceStore = {
 export const useFinanceStore = create<FinanceStore>((set, get) => ({
   tab: "transactions",
   intelOpen: true,
+  quickAddIntent: null,
   transactions: [],
   budgets: [],
   budgetRollups: [],
@@ -62,6 +68,14 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
   setTab: (tab) => set({ tab }),
   setIntelOpen: (open) =>
     set((s) => ({ intelOpen: typeof open === "function" ? open(s.intelOpen) : open })),
+
+  requestQuickAdd: (intent) =>
+    set(() => {
+      const tab: FinanceTab =
+        intent === "transaction" ? "transactions" : intent === "budget" ? "budgets" : intent === "debt" ? "debt" : "accounts";
+      return { tab, quickAddIntent: intent };
+    }),
+  clearQuickAddIntent: () => set({ quickAddIntent: null }),
 
   load: async () => {
     set({ loading: true });

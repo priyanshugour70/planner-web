@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -45,9 +45,11 @@ import {
   TrendingDown,
   TrendingUp,
   Wallet,
+  Plus,
 } from "lucide-react";
 import { useFinance } from "@/modules/finance/hooks/use-finance";
 import type { FinanceTab } from "@/modules/finance/stores/finance-store";
+import { useFinanceStore } from "@/modules/finance/stores/finance-store";
 import { formatDisplayDate } from "@/lib/format-display-date";
 import { formatInrAmount } from "@/lib/format-inr";
 import { getLocalMonthBounds, getPreviousLocalMonthBounds } from "@/lib/local-month-bounds";
@@ -155,7 +157,10 @@ export function FinanceView() {
     createObligation,
     deleteObligation,
     recordDebtPayment,
+    requestQuickAdd,
   } = useFinance();
+
+  const [quickMenuOpen, setQuickMenuOpen] = useState(false);
 
   const rollupByBudget = useMemo(() => {
     const m = new Map<string, BudgetRollupDTO>();
@@ -165,7 +170,7 @@ export function FinanceView() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-6xl space-y-6 px-3 pb-16 sm:px-5 lg:px-6">
+      <div className="mx-auto max-w-6xl space-y-6 px-3 pb-40 sm:px-5 sm:pb-44 lg:px-6">
         <div className="space-y-3 rounded-3xl border border-border/60 bg-card/50 p-6 sm:p-8">
           <Skeleton className="h-6 w-40 rounded-full" />
           <Skeleton className="h-10 w-3/4 max-w-md" />
@@ -183,7 +188,7 @@ export function FinanceView() {
   }
 
   return (
-    <div className="relative mx-auto max-w-6xl space-y-8 px-3 pb-24 sm:px-5 lg:px-6">
+    <div className="relative mx-auto max-w-6xl space-y-8 px-3 pb-40 sm:px-5 sm:pb-44 lg:px-6">
       <div
         className="pointer-events-none fixed inset-x-0 top-20 -z-10 mx-auto h-[22rem] max-w-3xl rounded-[3rem] bg-primary/[0.06] blur-3xl dark:bg-primary/[0.09]"
         aria-hidden
@@ -336,6 +341,89 @@ export function FinanceView() {
           />
         </TabsContent>
       </Tabs>
+
+      <Button
+        type="button"
+        size="icon"
+        className="fixed z-50 h-14 w-14 rounded-full shadow-lg touch-manipulation right-[max(1rem,env(safe-area-inset-right,0px))] bottom-[calc(max(1rem,env(safe-area-inset-bottom,0px))+3rem+0.75rem)] md:right-6 md:bottom-[calc(1.5rem+3rem+0.75rem)]"
+        aria-label="Quick add in finance"
+        onClick={() => setQuickMenuOpen(true)}
+      >
+        <Plus className="size-7" aria-hidden />
+      </Button>
+
+      <Dialog open={quickMenuOpen} onOpenChange={setQuickMenuOpen}>
+        <DialogContent className="max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>What would you like to add?</DialogTitle>
+            <DialogDescription>
+              Choose a type — we will switch to the right tab and highlight the form so you can log it quickly.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2 py-1">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start gap-2 py-3 text-left touch-manipulation"
+              onClick={() => {
+                setQuickMenuOpen(false);
+                requestQuickAdd("transaction");
+              }}
+            >
+              <Receipt className="size-4 shrink-0 opacity-70" aria-hidden />
+              <span>
+                <span className="font-medium">Log a transaction</span>
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">Income or expense you just paid or received</span>
+              </span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start gap-2 py-3 text-left touch-manipulation"
+              onClick={() => {
+                setQuickMenuOpen(false);
+                requestQuickAdd("budget");
+              }}
+            >
+              <Landmark className="size-4 shrink-0 opacity-70" aria-hidden />
+              <span>
+                <span className="font-medium">New budget</span>
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">Cap spending for a period</span>
+              </span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start gap-2 py-3 text-left touch-manipulation"
+              onClick={() => {
+                setQuickMenuOpen(false);
+                requestQuickAdd("accounts");
+              }}
+            >
+              <CreditCard className="size-4 shrink-0 opacity-70" aria-hidden />
+              <span>
+                <span className="font-medium">Account or category</span>
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">Structured labels and wallets</span>
+              </span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start gap-2 py-3 text-left touch-manipulation"
+              onClick={() => {
+                setQuickMenuOpen(false);
+                requestQuickAdd("debt");
+              }}
+            >
+              <ArrowDownLeft className="size-4 shrink-0 opacity-70" aria-hidden />
+              <span>
+                <span className="font-medium">Debt or receivable</span>
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">Money you owe or someone owes you</span>
+              </span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -404,6 +492,17 @@ function TransactionsPanel({
     if (txKind !== "all") base = base.filter((t) => t.kind === txKind);
     return base;
   }, [items, txRange, cf, ct, txKind]);
+
+  const quickAddIntent = useFinanceStore((s) => s.quickAddIntent);
+  const clearQuickAddIntent = useFinanceStore((s) => s.clearQuickAddIntent);
+  useEffect(() => {
+    if (quickAddIntent !== "transaction") return;
+    clearQuickAddIntent();
+    requestAnimationFrame(() => {
+      document.getElementById("finance-tx-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("tx-amount")?.focus();
+    });
+  }, [quickAddIntent, clearQuickAddIntent]);
 
   function openEdit(t: TransactionDTO) {
     setEditing(t);
@@ -528,7 +627,7 @@ function TransactionsPanel({
         </div>
       </div>
 
-      <Card className="border-border/70 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
+      <Card id="finance-tx-form" className="border-border/70 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
         <CardHeader className="space-y-1 pb-4">
           <CardTitle className="text-lg">Log transaction</CardTitle>
           <CardDescription className="text-pretty">
@@ -996,6 +1095,17 @@ function BudgetsPanel({
     return items.filter((b) => budgetOverlapsPeriod(b.periodStart, b.periodEnd, lo, hi));
   }, [items, budgetRange, bf, bt]);
 
+  const budgetQuickIntent = useFinanceStore((s) => s.quickAddIntent);
+  const clearBudgetQuickIntent = useFinanceStore((s) => s.clearQuickAddIntent);
+  useEffect(() => {
+    if (budgetQuickIntent !== "budget") return;
+    clearBudgetQuickIntent();
+    requestAnimationFrame(() => {
+      document.getElementById("finance-budget-add")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("b-name")?.focus();
+    });
+  }, [budgetQuickIntent, clearBudgetQuickIntent]);
+
   function openEdit(b: BudgetDTO) {
     setEditing(b);
     setEName(b.name);
@@ -1076,7 +1186,7 @@ function BudgetsPanel({
         ) : null}
       </div>
 
-      <Card className="border-border/70 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
+      <Card id="finance-budget-add" className="border-border/70 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
         <CardHeader className="space-y-1 pb-4">
           <CardTitle className="text-lg">New budget</CardTitle>
           <CardDescription className="text-pretty">
@@ -1344,9 +1454,20 @@ function AccountsCategoriesPanel({
     return rows;
   }, [categories, catKindFilter, catQuery]);
 
+  const accountsQuickIntent = useFinanceStore((s) => s.quickAddIntent);
+  const clearAccountsQuickIntent = useFinanceStore((s) => s.clearQuickAddIntent);
+  useEffect(() => {
+    if (accountsQuickIntent !== "accounts") return;
+    clearAccountsQuickIntent();
+    requestAnimationFrame(() => {
+      document.getElementById("finance-accounts-add")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("finance-quick-acc-name")?.focus();
+    });
+  }, [accountsQuickIntent, clearAccountsQuickIntent]);
+
   return (
     <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
-      <Card className="border-border/70 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
+      <Card id="finance-accounts-add" className="border-border/70 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
         <CardHeader className="space-y-1">
           <CardTitle className="text-lg">Accounts</CardTitle>
           <CardDescription className="text-pretty">Where money lives — attach these on every transaction.</CardDescription>
@@ -1365,7 +1486,7 @@ function AccountsCategoriesPanel({
             <Field className="sm:col-span-2">
               <FieldLabel>Name</FieldLabel>
               <FieldContent>
-                <Input value={accName} onChange={(e) => setAccName(e.target.value)} placeholder="Main checking" required />
+                <Input id="finance-quick-acc-name" value={accName} onChange={(e) => setAccName(e.target.value)} placeholder="Main checking" required />
               </FieldContent>
             </Field>
             <Field>
@@ -1640,6 +1761,17 @@ function DebtPanel({
     });
   }, [obligations, debtDir, debtStatus, debtDueFrom, debtDueTo]);
 
+  const debtQuickIntent = useFinanceStore((s) => s.quickAddIntent);
+  const clearDebtQuickIntent = useFinanceStore((s) => s.clearQuickAddIntent);
+  useEffect(() => {
+    if (debtQuickIntent !== "debt") return;
+    clearDebtQuickIntent();
+    requestAnimationFrame(() => {
+      document.getElementById("finance-debt-add")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("finance-quick-debt-counterparty")?.focus();
+    });
+  }, [debtQuickIntent, clearDebtQuickIntent]);
+
   function openPay(o: DebtObligationDTO) {
     setPayTarget(o);
     setPayAmount("");
@@ -1738,7 +1870,7 @@ function DebtPanel({
         </Button>
       </div>
 
-      <Card className="border-border/70 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
+      <Card id="finance-debt-add" className="border-border/70 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
         <CardHeader className="space-y-1">
           <CardTitle className="text-lg">Add debt or receivable</CardTitle>
           <CardDescription className="text-pretty">
@@ -1751,7 +1883,13 @@ function DebtPanel({
             <Field className="sm:col-span-2">
               <FieldLabel>Counterparty</FieldLabel>
               <FieldContent>
-                <Input value={counterparty} onChange={(e) => setCounterparty(e.target.value)} placeholder="Bank, friend, …" required />
+                <Input
+                  id="finance-quick-debt-counterparty"
+                  value={counterparty}
+                  onChange={(e) => setCounterparty(e.target.value)}
+                  placeholder="Bank, friend, …"
+                  required
+                />
               </FieldContent>
             </Field>
             <Field>
