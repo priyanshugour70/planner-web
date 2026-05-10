@@ -68,6 +68,27 @@ export const debtPaymentCreateSchema = z.object({
   note: z.string().max(2000).optional().nullable(),
 });
 
+const recurringCadenceSchema = z.enum(["monthly"]);
+
+export const recurringRuleCreateSchema = z.object({
+  label: z.string().trim().min(1).max(200),
+  templateKind: financeKindSchema,
+  templateAmount: amountInput,
+  templateCategory: z.string().trim().max(120).optional().nullable(),
+  cadence: recurringCadenceSchema.default("monthly"),
+  nextRunOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  active: z.boolean().optional(),
+  accountId: idStringSchema.optional().nullable(),
+  budgetId: idStringSchema.optional().nullable(),
+  categoryId: idStringSchema.optional().nullable(),
+});
+
+export const recurringRulePatchSchema = recurringRuleCreateSchema.partial();
+
+export const recurringMaterializeBodySchema = z.object({
+  throughDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
 export function parseAmount(v: number | string): string {
   if (typeof v === "number") return v.toFixed(2);
   const n = Number(v);

@@ -106,6 +106,22 @@ export interface DebtPaymentRow {
   note: string | null;
 }
 
+export interface RecurringRuleRow {
+  id: bigint;
+  user_id: bigint;
+  template_kind: string;
+  template_amount: string;
+  template_category: string | null;
+  cadence: string;
+  next_run_on: Date;
+  active: boolean;
+  created_at: Date;
+  label: string;
+  account_id: bigint | null;
+  budget_id: bigint | null;
+  category_id: bigint | null;
+}
+
 export function serializeFinanceAccount(r: FinanceAccountRow) {
   return {
     id: String(r.id),
@@ -153,5 +169,23 @@ export function serializeDebtPayment(r: DebtPaymentRow) {
     amount: r.amount,
     paidAt: iso(r.paid_at),
     note: r.note,
+  };
+}
+
+export function serializeRecurringRule(r: RecurringRuleRow) {
+  return {
+    id: String(r.id),
+    userId: String(r.user_id),
+    label: r.label,
+    templateKind: r.template_kind,
+    templateAmount: r.template_amount,
+    templateCategory: r.template_category,
+    cadence: r.cadence,
+    nextRunOn: isoDate(r.next_run_on) as string,
+    active: r.active,
+    accountId: r.account_id != null ? String(r.account_id) : null,
+    budgetId: r.budget_id != null ? String(r.budget_id) : null,
+    categoryId: r.category_id != null ? String(r.category_id) : null,
+    createdAt: iso(r.created_at),
   };
 }

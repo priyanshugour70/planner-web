@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test:finance": "tsx scripts/verify-finance-calendar.ts",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:migrate:continue": "tsx scripts/migrate.ts --continue",
     "db:migrate:baseline-all": "tsx scripts/migrate.ts --baseline-all",

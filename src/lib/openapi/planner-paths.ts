@@ -144,6 +144,18 @@ export const plannerOpenApiPaths: Record<string, Record<string, unknown>> = {
   "/planner/finance/budget-rollup": {
     get: secured("Per-budget spend vs limit for each budget period"),
   },
+  "/planner/finance/recurring-rules": {
+    get: secured("List recurring / EMI templates"),
+    post: secured("Create recurring rule (monthly cadence)"),
+  },
+  "/planner/finance/recurring-rules/materialize-due": {
+    post: secured("Create transactions for due recurring rules up to throughDate (default today UTC)"),
+  },
+  "/planner/finance/recurring-rules/{id}": {
+    get: secured("Get recurring rule", { parameters: [idParam] }),
+    patch: secured("Update recurring rule", { parameters: [idParam] }),
+    delete: secured("Delete recurring rule", { parameters: [idParam] }),
+  },
   "/planner/finance/accounts": {
     get: secured("List finance accounts (cash, bank, card, …)"),
     post: secured("Create finance account"),

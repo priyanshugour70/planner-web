@@ -129,6 +129,27 @@ export type BudgetRollupDTO = {
   periodEnd: string | null;
 };
 
+/** Recurring / EMI template — materializes into `transactions` via materialize-due. */
+export type RecurringRuleDTO = {
+  id: string;
+  userId: string;
+  label: string;
+  templateKind: string;
+  templateAmount: string;
+  templateCategory: string | null;
+  cadence: string;
+  nextRunOn: string;
+  active: boolean;
+  accountId: string | null;
+  budgetId: string | null;
+  categoryId: string | null;
+  createdAt: string;
+};
+
+export type RecurringMaterializeResultDTO = {
+  createdTransactionIds: string[];
+};
+
 export type HabitDTO = {
   id: string;
   userId: string;

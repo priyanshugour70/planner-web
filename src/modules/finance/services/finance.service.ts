@@ -8,6 +8,8 @@ import type {
   FinanceAccountDTO,
   FinanceCategoryDTO,
   FinanceSummaryDTO,
+  RecurringMaterializeResultDTO,
+  RecurringRuleDTO,
   TransactionDTO,
 } from "@/types/planner";
 import { q } from "@/modules/shared/client/query-string";
@@ -46,6 +48,42 @@ export async function fetchTransactions(opts?: {
 
 export async function fetchFinanceSummary(): Promise<APIEnvelope<FinanceSummaryDTO>> {
   return apiRequest<FinanceSummaryDTO>("/planner/finance/summary");
+}
+
+export async function fetchRecurringRules(): Promise<APIEnvelope<RecurringRuleDTO[]>> {
+  return apiRequest<RecurringRuleDTO[]>("/planner/finance/recurring-rules");
+}
+
+export async function createRecurringRule(
+  body: Record<string, unknown>
+): Promise<APIEnvelope<RecurringRuleDTO>> {
+  return apiRequest<RecurringRuleDTO>("/planner/finance/recurring-rules", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateRecurringRule(
+  id: string,
+  body: Record<string, unknown>
+): Promise<APIEnvelope<RecurringRuleDTO>> {
+  return apiRequest<RecurringRuleDTO>(`/planner/finance/recurring-rules/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteRecurringRule(id: string): Promise<APIEnvelope<{ ok: true }>> {
+  return apiRequest<{ ok: true }>(`/planner/finance/recurring-rules/${id}`, { method: "DELETE" });
+}
+
+export async function materializeRecurringDue(
+  body?: Record<string, unknown>
+): Promise<APIEnvelope<RecurringMaterializeResultDTO>> {
+  return apiRequest<RecurringMaterializeResultDTO>("/planner/finance/recurring-rules/materialize-due", {
+    method: "POST",
+    body: JSON.stringify(body ?? {}),
+  });
 }
 
 export async function createTransaction(

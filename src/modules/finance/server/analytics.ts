@@ -1,5 +1,6 @@
 import "server-only";
 import { getSql } from "@/lib/db";
+import { getUtcCalendarMonthBounds } from "@/modules/finance/server/calendar-month";
 import { isoDate } from "@/modules/shared/server/serialize-helpers";
 import type { BudgetRollupDTO, FinanceSummaryDTO } from "@/types/planner";
 
@@ -9,14 +10,7 @@ import type { BudgetRollupDTO, FinanceSummaryDTO } from "@/types/planner";
  */
 export async function computeFinanceSummary(userId: bigint): Promise<FinanceSummaryDTO> {
   const sql = getSql();
-  const start = new Date();
-  start.setUTCDate(1);
-  start.setUTCHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setUTCMonth(end.getUTCMonth() + 1);
-
-  const startStr = start.toISOString().slice(0, 10);
-  const endStr = end.toISOString().slice(0, 10);
+  const { startStr, endExclusiveStr: endStr } = getUtcCalendarMonthBounds(new Date());
 
   const [spend] = await sql<{ s: string }[]>`
     SELECT COALESCE(SUM(amount), 0)::text AS s FROM transactions
