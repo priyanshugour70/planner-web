@@ -74,6 +74,7 @@ async function main() {
       env: process.env,
     });
     console.log("\nReset complete (schema + migrations).");
+    console.log("Optional: pnpm db:seed (finance + tasks demo for priyanshugour1@gmail.com or SEED_*_EMAIL).");
   } else {
     console.log("Skipped migrations (--no-migrate). Run: pnpm db:migrate");
   }

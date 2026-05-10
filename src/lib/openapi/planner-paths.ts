@@ -72,7 +72,9 @@ export const plannerOpenApiPaths: Record<string, Record<string, unknown>> = {
     delete: secured("Delete milestone", { parameters: [goalIdParam, milestoneIdParam] }),
   },
   "/planner/tasks": {
-    get: secured("List tasks (supports filters via query string)"),
+    get: secured(
+      "List tasks: query `status`, `goalId`, `parentTaskId`, `rootsOnly=true`, `q` (title), `limit` (1–500), `sort` (due|updated|priority|created)"
+    ),
     post: secured("Create task"),
   },
   "/planner/tasks/{id}": {

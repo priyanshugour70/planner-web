@@ -5,6 +5,8 @@
  * Usage:
  *   pnpm db:seed:finance
  *   SEED_FINANCE_EMAIL=you@example.com pnpm db:seed:finance --force
+ *
+ * For finance + tasks in one go: `pnpm db:seed` (see scripts/seed-all.ts).
  */
 import { config } from "dotenv";
 import path from "node:path";

@@ -111,6 +111,7 @@ async function main() {
 
   await sql.end({ timeout: 10 });
   process.stdout.write("Migrations complete.\n");
+  process.stdout.write("Optional demo data: pnpm db:seed (finance + tasks) or pnpm db:seed:tasks / pnpm db:seed:finance\n");
 }
 
 main().catch((err) => {

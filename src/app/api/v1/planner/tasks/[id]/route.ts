@@ -4,6 +4,8 @@ import * as Auth from "@/modules/auth/server/auth-service";
 import { HttpError } from "@/modules/auth/server/http-error";
 import { bigIntPathId } from "@/modules/shared/server/path-ids";
 import { taskPatchSchema } from "@/modules/tasks/server/schemas";
+import { parseTaskTimestamptz } from "@/modules/tasks/server/task-datetime";
+import { taskParentWouldCycle } from "@/modules/tasks/server/task-parent";
 import { serializeTask, type TaskRow } from "@/modules/tasks/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
 
@@ -51,9 +53,26 @@ export const PATCH = withApiRoute(
       else {
         const pid = BigInt(body.parentTaskId);
         if (pid === id) throw new HttpError(400, ErrorCodes.VALIDATION_ERROR, "Task cannot be parent of itself");
-        const [p] = await sql`SELECT id FROM tasks WHERE id = ${pid} AND user_id = ${auth.userId} LIMIT 1`;
+        const [p] = await sql<TaskRow[]>`
+          SELECT * FROM tasks WHERE id = ${pid} AND user_id = ${auth.userId} LIMIT 1
+        `;
         if (!p) throw new HttpError(400, ErrorCodes.VALIDATION_ERROR, "Invalid parent task");
+        if (await taskParentWouldCycle(sql, auth.userId, id, pid)) {
+          throw new HttpError(400, ErrorCodes.VALIDATION_ERROR, "Parent would create a cycle in the task tree");
+        }
         parentTaskId = pid;
+      }
+    }
+
+    if (parentTaskId != null) {
+      const [pr] = await sql<TaskRow[]>`
+        SELECT goal_id FROM tasks WHERE id = ${parentTaskId} AND user_id = ${auth.userId} LIMIT 1
+      `;
+      if (pr?.goal_id != null) {
+        if (goalId != null && pr.goal_id !== goalId) {
+          throw new HttpError(400, ErrorCodes.VALIDATION_ERROR, "goalId must match the parent task's goal");
+        }
+        goalId = pr.goal_id;
       }
     }
 
@@ -61,18 +80,33 @@ export const PATCH = withApiRoute(
     const description = body.description !== undefined ? body.description : existing.description;
     const status = body.status !== undefined ? body.status : existing.status;
     const priority = body.priority !== undefined ? body.priority : existing.priority;
-    const dueAt =
-      body.dueAt !== undefined
-        ? body.dueAt === null
-          ? null
-          : new Date(body.dueAt)
-        : existing.due_at;
-    const completedAt =
-      body.completedAt !== undefined
-        ? body.completedAt
-          ? new Date(body.completedAt)
-          : null
-        : existing.completed_at;
+
+    let dueAt: Date | null = existing.due_at;
+    if (body.dueAt !== undefined) {
+      if (body.dueAt === null) dueAt = null;
+      else {
+        const d = parseTaskTimestamptz(body.dueAt);
+        if (!d) throw new HttpError(400, ErrorCodes.VALIDATION_ERROR, "Invalid dueAt");
+        dueAt = d;
+      }
+    }
+
+    let completedAt: Date | null = existing.completed_at;
+    if (body.completedAt !== undefined) {
+      if (body.completedAt === null) completedAt = null;
+      else {
+        const c = parseTaskTimestamptz(body.completedAt);
+        if (!c) throw new HttpError(400, ErrorCodes.VALIDATION_ERROR, "Invalid completedAt");
+        completedAt = c;
+      }
+    } else if (body.status !== undefined) {
+      if (body.status === "done" && existing.status !== "done") {
+        completedAt = new Date();
+      } else if (existing.status === "done" && body.status !== "done") {
+        completedAt = null;
+      }
+    }
+
     const tags = body.tags !== undefined ? body.tags : existing.tags;
 
     const [row] = await sql<TaskRow[]>`

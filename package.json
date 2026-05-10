@@ -14,7 +14,9 @@
     "db:migrate:baseline-all": "tsx scripts/migrate.ts --baseline-all",
     "db:repair": "tsx scripts/migrate-repair-only.ts",
     "db:reset": "tsx scripts/db-reset.ts",
-    "db:seed:finance": "tsx scripts/seed-finance-demo.ts"
+    "db:seed": "tsx scripts/seed-all.ts",
+    "db:seed:finance": "tsx scripts/seed-finance-demo.ts",
+    "db:seed:tasks": "tsx scripts/seed-tasks-demo.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
