@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -47,7 +48,9 @@ import {
 } from "lucide-react";
 import { useFinance } from "@/modules/finance/hooks/use-finance";
 import type { FinanceTab } from "@/modules/finance/stores/finance-store";
+import { formatDisplayDate } from "@/lib/format-display-date";
 import { formatInrAmount } from "@/lib/format-inr";
+import { getLocalMonthBounds, getPreviousLocalMonthBounds } from "@/lib/local-month-bounds";
 import { cn } from "@/lib/utils";
 import type {
   BudgetDTO,
@@ -75,6 +78,18 @@ function pctSpent(spent: string, limit: string): number {
   return Math.min(100, Math.round((s / l) * 100));
 }
 
+/** Budget period overlaps [from, to] inclusive (YYYY-MM-DD). */
+function budgetOverlapsPeriod(
+  periodStart: string | null | undefined,
+  periodEnd: string | null | undefined,
+  from: string,
+  to: string
+): boolean {
+  const s = (periodStart && periodStart.length >= 10 ? periodStart : "0000-01-01").slice(0, 10);
+  const e = (periodEnd && periodEnd.length >= 10 ? periodEnd : "9999-12-31").slice(0, 10);
+  return s <= to && e >= from;
+}
+
 function StatCard({
   icon: Icon,
   label,
@@ -88,22 +103,17 @@ function StatCard({
   sub?: ReactNode;
   accent?: "default" | "emerald" | "rose" | "amber";
 }) {
-  const accentRing =
-    accent === "emerald"
-      ? "ring-emerald-500/15"
-      : accent === "rose"
-        ? "ring-rose-500/15"
-        : accent === "amber"
-          ? "ring-amber-500/20"
-          : "ring-primary/10";
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-border/70 bg-card/95 p-4 shadow-sm ring-1 backdrop-blur-sm transition-shadow hover:shadow-md sm:p-5",
-        accentRing
+        "relative overflow-hidden rounded-2xl border p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5",
+        accent === "emerald" && "border-emerald-500/20 bg-emerald-500/[0.07] dark:border-emerald-500/25 dark:bg-emerald-500/[0.1]",
+        accent === "rose" && "border-rose-500/20 bg-rose-500/[0.07] dark:border-rose-500/25 dark:bg-rose-500/[0.1]",
+        accent === "amber" && "border-amber-500/25 bg-amber-500/[0.08] dark:border-amber-500/30 dark:bg-amber-500/[0.11]",
+        (!accent || accent === "default") && "border-border/70 bg-card/95 backdrop-blur-sm"
       )}
     >
-      <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-gradient-to-br from-primary/10 to-transparent" />
+      <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-gradient-to-br from-primary/[0.07] to-transparent" />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -373,6 +383,28 @@ function TransactionsPanel({
   const [ePaymentMethod, setEPaymentMethod] = useState("");
   const [eTags, setETags] = useState("");
 
+  const [txRange, setTxRange] = useState<"all" | "this_month" | "last_month" | "custom">("this_month");
+  const [cf, setCf] = useState(() => new Date().toISOString().slice(0, 10));
+  const [ct, setCt] = useState(() => new Date().toISOString().slice(0, 10));
+  const [txKind, setTxKind] = useState<"all" | "income" | "expense">("all");
+
+  const filteredItems = useMemo(() => {
+    let base = items;
+    if (txRange === "this_month") {
+      const { from, to } = getLocalMonthBounds();
+      base = base.filter((t) => t.occurredOn && t.occurredOn >= from && t.occurredOn <= to);
+    } else if (txRange === "last_month") {
+      const { from, to } = getPreviousLocalMonthBounds();
+      base = base.filter((t) => t.occurredOn && t.occurredOn >= from && t.occurredOn <= to);
+    } else if (txRange === "custom") {
+      const lo = cf <= ct ? cf : ct;
+      const hi = cf <= ct ? ct : cf;
+      base = base.filter((t) => t.occurredOn && t.occurredOn >= lo && t.occurredOn <= hi);
+    }
+    if (txKind !== "all") base = base.filter((t) => t.kind === txKind);
+    return base;
+  }, [items, txRange, cf, ct, txKind]);
+
   function openEdit(t: TransactionDTO) {
     setEditing(t);
     setEKind(t.kind === "income" ? "income" : "expense");
@@ -445,6 +477,57 @@ function TransactionsPanel({
 
   return (
     <div className="space-y-8">
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              ["this_month", "This month"],
+              ["last_month", "Last month"],
+              ["all", "All dates"],
+              ["custom", "Custom range"],
+            ] as const
+          ).map(([k, lab]) => (
+            <Button
+              key={k}
+              type="button"
+              size="sm"
+              variant={txRange === k ? "default" : "outline"}
+              className="touch-manipulation rounded-full"
+              onClick={() => setTxRange(k)}
+            >
+              {lab}
+            </Button>
+          ))}
+        </div>
+        {txRange === "custom" ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <DatePickerField id="tx-f-from" label="From" value={cf} onChange={setCf} />
+            <DatePickerField id="tx-f-to" label="To" value={ct} onChange={setCt} />
+          </div>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">Type</span>
+          {(
+            [
+              ["all", "All"],
+              ["income", "Income"],
+              ["expense", "Expense"],
+            ] as const
+          ).map(([k, lab]) => (
+            <Button
+              key={k}
+              type="button"
+              size="sm"
+              variant={txKind === k ? "secondary" : "outline"}
+              className="touch-manipulation rounded-full"
+              onClick={() => setTxKind(k)}
+            >
+              {lab}
+            </Button>
+          ))}
+        </div>
+      </div>
+
       <Card className="border-border/70 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
         <CardHeader className="space-y-1 pb-4">
           <CardTitle className="text-lg">Log transaction</CardTitle>
@@ -485,12 +568,7 @@ function TransactionsPanel({
                 />
               </FieldContent>
             </Field>
-            <Field>
-              <FieldLabel htmlFor="tx-date">Date</FieldLabel>
-              <FieldContent>
-                <Input id="tx-date" type="date" value={occurredOn} onChange={(e) => setOccurredOn(e.target.value)} />
-              </FieldContent>
-            </Field>
+            <DatePickerField id="tx-date" label="Date" value={occurredOn} onChange={setOccurredOn} className="sm:col-span-1" />
             <Field>
               <FieldLabel htmlFor="tx-cat">Category (free text)</FieldLabel>
               <FieldContent>
@@ -589,17 +667,31 @@ function TransactionsPanel({
           <Card className="border-dashed">
             <CardContent className="py-10 text-center text-sm text-muted-foreground">No transactions yet.</CardContent>
           </Card>
+        ) : filteredItems.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              No transactions in this date range. Try another filter.
+            </CardContent>
+          </Card>
         ) : (
-          items.map((t) => {
+          filteredItems.map((t) => {
             const acc = accounts.find((a) => a.id === t.accountId);
             const cat = categories.find((c) => c.id === t.categoryId);
             const bud = budgets.find((b) => b.id === t.budgetId);
             return (
-              <Card key={t.id} className="overflow-hidden border-border/70 shadow-sm">
+              <Card
+                key={t.id}
+                className={cn(
+                  "overflow-hidden shadow-sm",
+                  t.kind === "income"
+                    ? "border border-emerald-500/20 bg-emerald-500/[0.06] dark:bg-emerald-500/[0.09]"
+                    : "border border-destructive/20 bg-destructive/[0.05] dark:bg-destructive/[0.08]"
+                )}
+              >
                 <CardContent className="space-y-3 p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground">{t.occurredOn ?? "—"}</p>
+                      <p className="text-xs font-medium text-muted-foreground">{formatDisplayDate(t.occurredOn)}</p>
                       <p className="mt-1 font-medium capitalize">{t.kind}</p>
                     </div>
                     <p
@@ -660,13 +752,28 @@ function TransactionsPanel({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((t) => {
+                  {filteredItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
+                        {items.length === 0 ? "No transactions yet." : "No transactions in this date range."}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                  filteredItems.map((t) => {
                     const acc = accounts.find((a) => a.id === t.accountId);
                     const cat = categories.find((c) => c.id === t.categoryId);
                     const bud = budgets.find((b) => b.id === t.budgetId);
                     return (
-                      <TableRow key={t.id} className="group">
-                        <TableCell className="whitespace-nowrap text-muted-foreground">{t.occurredOn ?? "—"}</TableCell>
+                      <TableRow
+                        key={t.id}
+                        className={cn(
+                          "group border-b",
+                          t.kind === "income"
+                            ? "bg-emerald-500/[0.04] hover:bg-emerald-500/[0.07] dark:bg-emerald-500/[0.06]"
+                            : "bg-destructive/[0.03] hover:bg-destructive/[0.06] dark:bg-destructive/[0.05]"
+                        )}
+                      >
+                        <TableCell className="whitespace-nowrap text-muted-foreground">{formatDisplayDate(t.occurredOn)}</TableCell>
                         <TableCell className="capitalize">{t.kind}</TableCell>
                         <TableCell>
                           <div className="font-medium">{t.category ?? cat?.name ?? "—"}</div>
@@ -703,7 +810,8 @@ function TransactionsPanel({
                         </TableCell>
                       </TableRow>
                     );
-                  })}
+                  })
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -741,12 +849,7 @@ function TransactionsPanel({
                 <Input type="number" step="0.01" min="0" value={eAmount} onChange={(e) => setEAmount(e.target.value)} />
               </FieldContent>
             </Field>
-            <Field>
-              <FieldLabel>Date</FieldLabel>
-              <FieldContent>
-                <Input type="date" value={eDate} onChange={(e) => setEDate(e.target.value)} />
-              </FieldContent>
-            </Field>
+            <DatePickerField id="tx-edit-date" label="Date" value={eDate} onChange={setEDate} />
             <Field>
               <FieldLabel>Category (text)</FieldLabel>
               <FieldContent>
@@ -874,6 +977,25 @@ function BudgetsPanel({
   const [eStart, setEStart] = useState("");
   const [eEnd, setEEnd] = useState("");
 
+  const [budgetRange, setBudgetRange] = useState<"all" | "this_month" | "last_month" | "custom">("all");
+  const [bf, setBf] = useState(() => new Date().toISOString().slice(0, 10));
+  const [bt, setBt] = useState(() => new Date().toISOString().slice(0, 10));
+
+  const filteredBudgets = useMemo(() => {
+    if (budgetRange === "all") return items;
+    if (budgetRange === "this_month") {
+      const { from, to } = getLocalMonthBounds();
+      return items.filter((b) => budgetOverlapsPeriod(b.periodStart, b.periodEnd, from, to));
+    }
+    if (budgetRange === "last_month") {
+      const { from, to } = getPreviousLocalMonthBounds();
+      return items.filter((b) => budgetOverlapsPeriod(b.periodStart, b.periodEnd, from, to));
+    }
+    const lo = bf <= bt ? bf : bt;
+    const hi = bf <= bt ? bt : bf;
+    return items.filter((b) => budgetOverlapsPeriod(b.periodStart, b.periodEnd, lo, hi));
+  }, [items, budgetRange, bf, bt]);
+
   function openEdit(b: BudgetDTO) {
     setEditing(b);
     setEName(b.name);
@@ -923,6 +1045,37 @@ function BudgetsPanel({
 
   return (
     <div className="space-y-8">
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-muted-foreground">Filter list by period overlap</p>
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              ["all", "All budgets"],
+              ["this_month", "This month"],
+              ["last_month", "Last month"],
+              ["custom", "Custom range"],
+            ] as const
+          ).map(([k, lab]) => (
+            <Button
+              key={k}
+              type="button"
+              size="sm"
+              variant={budgetRange === k ? "default" : "outline"}
+              className="touch-manipulation rounded-full"
+              onClick={() => setBudgetRange(k)}
+            >
+              {lab}
+            </Button>
+          ))}
+        </div>
+        {budgetRange === "custom" ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <DatePickerField id="bud-f-from" label="From" value={bf} onChange={setBf} />
+            <DatePickerField id="bud-f-to" label="To" value={bt} onChange={setBt} />
+          </div>
+        ) : null}
+      </div>
+
       <Card className="border-border/70 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
         <CardHeader className="space-y-1 pb-4">
           <CardTitle className="text-lg">New budget</CardTitle>
@@ -956,18 +1109,8 @@ function BudgetsPanel({
                 <Input id="b-limit" type="number" min="0" step="0.01" value={limit} onChange={(e) => setLimit(e.target.value)} required />
               </FieldContent>
             </Field>
-            <Field>
-              <FieldLabel htmlFor="b-start">Period start</FieldLabel>
-              <FieldContent>
-                <Input id="b-start" type="date" value={start} onChange={(e) => setStart(e.target.value)} required />
-              </FieldContent>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="b-end">Period end</FieldLabel>
-              <FieldContent>
-                <Input id="b-end" type="date" value={end} onChange={(e) => setEnd(e.target.value)} required />
-              </FieldContent>
-            </Field>
+            <DatePickerField id="b-period-start" label="Period start" value={start} onChange={setStart} />
+            <DatePickerField id="b-period-end" label="Period end" value={end} onChange={setEnd} />
             <div className="sm:col-span-2">
               <Button type="submit" size="lg" className="h-11 w-full touch-manipulation sm:h-9 sm:w-auto">
                 Create budget
@@ -978,7 +1121,18 @@ function BudgetsPanel({
       </Card>
 
       <div className="grid gap-3 lg:hidden">
-        {items.map((b) => {
+        {items.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">No budgets yet.</CardContent>
+          </Card>
+        ) : filteredBudgets.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              No budgets overlap this period. Try another range.
+            </CardContent>
+          </Card>
+        ) : null}
+        {filteredBudgets.map((b) => {
           const r = rollupByBudget.get(b.id);
           const spent = r?.spent ?? "0";
           const p = pctSpent(spent, b.amountLimit);
@@ -993,7 +1147,7 @@ function BudgetsPanel({
                   <Badge variant={p >= 100 ? "destructive" : "secondary"}>{p}% used</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {b.periodStart ?? "—"} → {b.periodEnd ?? "—"}
+                  {formatDisplayDate(b.periodStart)} → {formatDisplayDate(b.periodEnd)}
                 </p>
                 <div className="text-sm tabular-nums">
                   <span className="text-muted-foreground">Spend</span>{" "}
@@ -1041,7 +1195,20 @@ function BudgetsPanel({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((b) => {
+                {items.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
+                      No budgets yet.
+                    </TableCell>
+                  </TableRow>
+                ) : filteredBudgets.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
+                      No budgets overlap this period.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+                {filteredBudgets.map((b) => {
                   const r = rollupByBudget.get(b.id);
                   const spent = r?.spent ?? "0";
                   const p = pctSpent(spent, b.amountLimit);
@@ -1052,7 +1219,7 @@ function BudgetsPanel({
                         {b.category ? <div className="text-xs text-muted-foreground">{b.category}</div> : null}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                        {b.periodStart ?? "—"} → {b.periodEnd ?? "—"}
+                        {formatDisplayDate(b.periodStart)} → {formatDisplayDate(b.periodEnd)}
                       </TableCell>
                       <TableCell className="min-w-[200px]">
                         <div className="text-xs tabular-nums text-muted-foreground">
@@ -1118,18 +1285,8 @@ function BudgetsPanel({
                 <Input type="number" min="0" step="0.01" value={eLimit} onChange={(e) => setELimit(e.target.value)} required />
               </FieldContent>
             </Field>
-            <Field>
-              <FieldLabel>Start</FieldLabel>
-              <FieldContent>
-                <Input type="date" value={eStart} onChange={(e) => setEStart(e.target.value)} required />
-              </FieldContent>
-            </Field>
-            <Field>
-              <FieldLabel>End</FieldLabel>
-              <FieldContent>
-                <Input type="date" value={eEnd} onChange={(e) => setEEnd(e.target.value)} required />
-              </FieldContent>
-            </Field>
+            <DatePickerField id="b-edit-start" label="Start" value={eStart} onChange={setEStart} />
+            <DatePickerField id="b-edit-end" label="End" value={eEnd} onChange={setEEnd} />
             <DialogFooter>
               <Button type="submit">Save budget</Button>
             </DialogFooter>
@@ -1168,6 +1325,24 @@ function AccountsCategoriesPanel({
   const [catName, setCatName] = useState("");
   const [catKind, setCatKind] = useState("expense");
   const [parentId, setParentId] = useState<string>(NONE);
+
+  const [accQuery, setAccQuery] = useState("");
+  const [catQuery, setCatQuery] = useState("");
+  const [catKindFilter, setCatKindFilter] = useState<"all" | "income" | "expense" | "both">("all");
+
+  const filteredAccounts = useMemo(() => {
+    const q = accQuery.trim().toLowerCase();
+    if (!q) return accounts;
+    return accounts.filter((a) => a.name.toLowerCase().includes(q));
+  }, [accounts, accQuery]);
+
+  const filteredCategories = useMemo(() => {
+    let rows = categories;
+    if (catKindFilter !== "all") rows = rows.filter((c) => c.kind === catKindFilter);
+    const q = catQuery.trim().toLowerCase();
+    if (q) rows = rows.filter((c) => c.name.toLowerCase().includes(q));
+    return rows;
+  }, [categories, catKindFilter, catQuery]);
 
   return (
     <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
@@ -1217,6 +1392,12 @@ function AccountsCategoriesPanel({
             </div>
           </form>
           <Separator />
+          <Field>
+            <FieldLabel htmlFor="acc-filter">Search accounts</FieldLabel>
+            <FieldContent>
+              <Input id="acc-filter" value={accQuery} onChange={(e) => setAccQuery(e.target.value)} placeholder="Filter by name…" />
+            </FieldContent>
+          </Field>
           <ScrollArea className="h-[min(18rem,42vh)] w-full rounded-lg border border-border/50">
             <Table>
               <TableHeader>
@@ -1227,7 +1408,20 @@ function AccountsCategoriesPanel({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {accounts.map((a) => {
+                {accounts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">
+                      No accounts yet.
+                    </TableCell>
+                  </TableRow>
+                ) : filteredAccounts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">
+                      No accounts match this search.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+                {filteredAccounts.map((a) => {
                   const Icon = accountKindIcon(a.kind);
                   return (
                     <TableRow key={a.id}>
@@ -1325,6 +1519,35 @@ function AccountsCategoriesPanel({
             </Button>
           </form>
           <Separator />
+          <div className="space-y-3">
+            <Field>
+              <FieldLabel htmlFor="cat-filter">Search categories</FieldLabel>
+              <FieldContent>
+                <Input id="cat-filter" value={catQuery} onChange={(e) => setCatQuery(e.target.value)} placeholder="Filter by name…" />
+              </FieldContent>
+            </Field>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  ["all", "All kinds"],
+                  ["expense", "Expense"],
+                  ["income", "Income"],
+                  ["both", "Both"],
+                ] as const
+              ).map(([k, lab]) => (
+                <Button
+                  key={k}
+                  type="button"
+                  size="sm"
+                  variant={catKindFilter === k ? "secondary" : "outline"}
+                  className="touch-manipulation rounded-full capitalize"
+                  onClick={() => setCatKindFilter(k)}
+                >
+                  {lab}
+                </Button>
+              ))}
+            </div>
+          </div>
           <ScrollArea className="h-[min(18rem,42vh)] w-full rounded-lg border border-border/50">
             <Table>
               <TableHeader>
@@ -1335,8 +1558,28 @@ function AccountsCategoriesPanel({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {categories.map((c) => (
-                  <TableRow key={c.id}>
+                {categories.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">
+                      No categories yet.
+                    </TableCell>
+                  </TableRow>
+                ) : filteredCategories.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">
+                      No categories match these filters.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+                {filteredCategories.map((c) => (
+                  <TableRow
+                    key={c.id}
+                    className={cn(
+                      c.kind === "income" && "bg-emerald-500/[0.04] dark:bg-emerald-500/[0.06]",
+                      c.kind === "expense" && "bg-rose-500/[0.04] dark:bg-rose-500/[0.06]",
+                      c.kind === "both" && "bg-primary/[0.04] dark:bg-primary/[0.06]"
+                    )}
+                  >
                     <TableCell className="font-medium">{c.name}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="font-normal capitalize">
@@ -1381,6 +1624,22 @@ function DebtPanel({
   const [payAmount, setPayAmount] = useState("");
   const [payNote, setPayNote] = useState("");
 
+  const [debtDir, setDebtDir] = useState<"all" | "lent" | "owed">("all");
+  const [debtStatus, setDebtStatus] = useState<"all" | "open" | "closed">("all");
+  const [debtDueFrom, setDebtDueFrom] = useState("");
+  const [debtDueTo, setDebtDueTo] = useState("");
+
+  const filteredObligations = useMemo(() => {
+    return obligations.filter((o) => {
+      if (debtDir !== "all" && o.direction !== debtDir) return false;
+      if (debtStatus !== "all" && o.status !== debtStatus) return false;
+      const d = o.dueDate && o.dueDate.length >= 10 ? o.dueDate.slice(0, 10) : "";
+      if (debtDueFrom && (!d || d < debtDueFrom)) return false;
+      if (debtDueTo && (!d || d > debtDueTo)) return false;
+      return true;
+    });
+  }, [obligations, debtDir, debtStatus, debtDueFrom, debtDueTo]);
+
   function openPay(o: DebtObligationDTO) {
     setPayTarget(o);
     setPayAmount("");
@@ -1418,6 +1677,67 @@ function DebtPanel({
 
   return (
     <div className="space-y-8">
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-muted-foreground">Filter obligations</p>
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              ["all", "All directions"],
+              ["owed", "Owed"],
+              ["lent", "Lent"],
+            ] as const
+          ).map(([k, lab]) => (
+            <Button
+              key={k}
+              type="button"
+              size="sm"
+              variant={debtDir === k ? "default" : "outline"}
+              className="touch-manipulation rounded-full capitalize"
+              onClick={() => setDebtDir(k)}
+            >
+              {lab}
+            </Button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              ["all", "All statuses"],
+              ["open", "Open"],
+              ["closed", "Closed"],
+            ] as const
+          ).map(([k, lab]) => (
+            <Button
+              key={k}
+              type="button"
+              size="sm"
+              variant={debtStatus === k ? "secondary" : "outline"}
+              className="touch-manipulation rounded-full capitalize"
+              onClick={() => setDebtStatus(k)}
+            >
+              {lab}
+            </Button>
+          ))}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="debt-due-from">Due on or after</FieldLabel>
+            <FieldContent>
+              <Input id="debt-due-from" type="date" value={debtDueFrom} onChange={(e) => setDebtDueFrom(e.target.value)} className="h-11 sm:h-9" />
+            </FieldContent>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="debt-due-to">Due on or before</FieldLabel>
+            <FieldContent>
+              <Input id="debt-due-to" type="date" value={debtDueTo} onChange={(e) => setDebtDueTo(e.target.value)} className="h-11 sm:h-9" />
+            </FieldContent>
+          </Field>
+        </div>
+        <Button type="button" size="sm" variant="ghost" className="text-muted-foreground" onClick={() => { setDebtDueFrom(""); setDebtDueTo(""); }}>
+          Clear due-date filter
+        </Button>
+      </div>
+
       <Card className="border-border/70 shadow-md ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
         <CardHeader className="space-y-1">
           <CardTitle className="text-lg">Add debt or receivable</CardTitle>
@@ -1454,12 +1774,23 @@ function DebtPanel({
                 <Input type="number" min="0" step="0.01" value={principal} onChange={(e) => setPrincipal(e.target.value)} required />
               </FieldContent>
             </Field>
-            <Field>
-              <FieldLabel>Due date</FieldLabel>
-              <FieldContent>
-                <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
-              </FieldContent>
-            </Field>
+            {due.length >= 10 ? (
+              <div className="space-y-2 sm:col-span-2">
+                <DatePickerField id="debt-create-due" label="Due date (optional)" value={due} onChange={setDue} />
+                <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setDue("")}>
+                  Remove due date
+                </Button>
+              </div>
+            ) : (
+              <Field className="sm:col-span-2">
+                <FieldLabel>Due date (optional)</FieldLabel>
+                <FieldContent>
+                  <Button type="button" variant="outline" className="h-11 w-full touch-manipulation justify-start font-normal sm:h-9" onClick={() => setDue(new Date().toISOString().slice(0, 10))}>
+                    Tap to add a due date
+                  </Button>
+                </FieldContent>
+              </Field>
+            )}
             <Field className="sm:col-span-2">
               <FieldLabel>Notes</FieldLabel>
               <FieldContent>
@@ -1476,8 +1807,25 @@ function DebtPanel({
       </Card>
 
       <div className="grid gap-3 md:hidden">
-        {obligations.map((o) => (
-          <Card key={o.id} className="overflow-hidden border-border/70 shadow-sm">
+        {obligations.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">No obligations yet.</CardContent>
+          </Card>
+        ) : filteredObligations.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">Nothing matches these filters.</CardContent>
+          </Card>
+        ) : null}
+        {filteredObligations.map((o) => (
+          <Card
+            key={o.id}
+            className={cn(
+              "overflow-hidden shadow-sm",
+              o.direction === "lent"
+                ? "border border-emerald-500/20 bg-emerald-500/[0.06] dark:bg-emerald-500/[0.09]"
+                : "border border-rose-500/20 bg-rose-500/[0.06] dark:bg-rose-500/[0.09]"
+            )}
+          >
             <CardContent className="space-y-3 p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -1489,7 +1837,7 @@ function DebtPanel({
                 <p className="text-lg font-semibold tabular-nums">{formatInrAmount(o.balance)}</p>
               </div>
               <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                <span>Due {o.dueDate ?? "—"}</span>
+                <span>Due {formatDisplayDate(o.dueDate)}</span>
                 <span>·</span>
                 <span className="capitalize">{o.status}</span>
               </div>
@@ -1525,8 +1873,28 @@ function DebtPanel({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {obligations.map((o) => (
-                  <TableRow key={o.id}>
+                {obligations.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                      No obligations yet.
+                    </TableCell>
+                  </TableRow>
+                ) : filteredObligations.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                      Nothing matches these filters.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+                {filteredObligations.map((o) => (
+                  <TableRow
+                    key={o.id}
+                    className={cn(
+                      o.direction === "lent"
+                        ? "bg-emerald-500/[0.04] hover:bg-emerald-500/[0.07] dark:bg-emerald-500/[0.06]"
+                        : "bg-rose-500/[0.04] hover:bg-rose-500/[0.07] dark:bg-rose-500/[0.06]"
+                    )}
+                  >
                     <TableCell className="font-medium">{o.counterparty}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="font-normal capitalize">
@@ -1535,7 +1903,7 @@ function DebtPanel({
                     </TableCell>
                     <TableCell className="text-right font-medium tabular-nums">{formatInrAmount(o.balance)}</TableCell>
                     <TableCell className="capitalize">{o.status}</TableCell>
-                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{o.dueDate ?? "—"}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDisplayDate(o.dueDate)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button type="button" variant="outline" size="sm" disabled={o.status === "closed"} onClick={() => openPay(o)}>

@@ -74,7 +74,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
       debt,
       fs,
     ] = await Promise.all([
-      FinanceService.fetchTransactions({ limit: "100" }),
+      FinanceService.fetchTransactions({ limit: "500" }),
       FinanceService.fetchBudgets(),
       FinanceService.fetchBudgetRollup(),
       FinanceService.fetchFinanceAccounts(),
