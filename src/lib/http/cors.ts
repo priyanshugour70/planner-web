@@ -27,7 +27,7 @@ export function corsHeaders(req: NextRequest): Headers {
   );
   headers.set(
     "Access-Control-Allow-Headers",
-    "Authorization, Content-Type, X-Request-Id, X-CSRF-Token"
+    "Authorization, Content-Type, X-Request-Id, X-CSRF-Token, X-Planner-Client"
   );
   headers.set("Access-Control-Max-Age", "86400");
   return headers;
