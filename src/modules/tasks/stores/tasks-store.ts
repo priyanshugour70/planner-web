@@ -16,11 +16,14 @@ export type TasksStore = {
   goalIdFilter: string;
   tasks: TaskDTO[];
   loading: boolean;
+  /** Incremented when the FAB should open the new-task panel (same pattern as finance quick-add). */
+  quickCreateRequest: number;
   setFilterStatus: (v: string) => void;
   setSort: (v: TaskSort) => void;
   setSearch: (v: string) => void;
   setRootsOnly: (v: boolean) => void;
   setGoalIdFilter: (v: string) => void;
+  requestQuickCreate: () => void;
   load: () => Promise<void>;
   createTask: (body: Record<string, unknown>) => Promise<boolean>;
   updateTask: (id: string, body: Record<string, unknown>) => Promise<boolean>;
@@ -35,6 +38,9 @@ export const useTasksStore = create<TasksStore>((set, get) => ({
   goalIdFilter: "",
   tasks: [],
   loading: true,
+  quickCreateRequest: 0,
+
+  requestQuickCreate: () => set((s) => ({ quickCreateRequest: s.quickCreateRequest + 1 })),
 
   setFilterStatus: (filterStatus) => {
     set({ filterStatus });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -34,8 +34,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useGoals } from "@/modules/goals/hooks/use-goals";
 import { useTasks } from "@/modules/tasks/hooks/use-tasks";
+import { useTasksStore } from "@/modules/tasks/stores/tasks-store";
 import { formatDisplayDate } from "@/lib/format-display-date";
 import { cn } from "@/lib/utils";
 import type { GoalDTO, TaskDTO } from "@/types/planner";
@@ -65,6 +67,21 @@ function statusLabel(s: string): string {
   }
 }
 
+function filterSummaryLine(
+  filterStatus: string,
+  rootsOnly: boolean,
+  search: string,
+  goalIdFilter: string,
+  goals: { id: string; title: string }[]
+): string {
+  const parts: string[] = [];
+  if (filterStatus) parts.push(statusLabel(filterStatus));
+  if (rootsOnly) parts.push("Roots only");
+  if (goalIdFilter) parts.push(goals.find((g) => g.id === goalIdFilter)?.title ?? "Goal");
+  if (search.trim()) parts.push(`Search "${search.trim().slice(0, 24)}${search.trim().length > 24 ? "…" : ""}"`);
+  return parts.length ? parts.join(" · ") : "Defaults";
+}
+
 export function TasksView() {
   const goals = useGoals();
   const {
@@ -85,6 +102,12 @@ export function TasksView() {
     updateTask,
     remove,
   } = useTasks();
+
+  const quickCreateRequest = useTasksStore((s) => s.quickCreateRequest);
+  const requestQuickCreate = useTasksStore((s) => s.requestQuickCreate);
+
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -115,6 +138,16 @@ export function TasksView() {
   const parentOptions = useMemo(() => {
     return tasks.filter((t) => !editing || t.id !== editing.id);
   }, [tasks, editing]);
+
+  useEffect(() => {
+    if (quickCreateRequest === 0) return;
+    setCreateOpen(true);
+    const t = window.setTimeout(() => {
+      document.getElementById("task-create-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("task-new-title")?.focus();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [quickCreateRequest]);
 
   function openEdit(t: TaskDTO) {
     setEditing(t);
@@ -153,6 +186,7 @@ export function TasksView() {
       setParentTaskId(NONE);
       setTagsCsv("");
       setCreateStatus("todo");
+      setCreateOpen(false);
     }
   }
 
@@ -181,7 +215,7 @@ export function TasksView() {
 
   if (loading && tasks.length === 0) {
     return (
-      <div className="mx-auto max-w-6xl space-y-8 px-3 pb-24 sm:px-5 lg:px-6">
+      <div className="mx-auto max-w-6xl space-y-8 px-3 pb-40 sm:px-5 lg:px-6">
         <Skeleton className="h-9 w-40" />
         <Skeleton className="h-4 max-w-md" />
         <Skeleton className="h-40 rounded-2xl" />
@@ -191,20 +225,29 @@ export function TasksView() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-3 pb-24 sm:px-5 lg:px-6">
-      <header className="space-y-2">
+    <div className="relative mx-auto max-w-6xl space-y-5 px-3 pb-40 sm:space-y-6 sm:px-5 sm:pb-44 lg:px-6">
+      <header className="space-y-1.5">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Tasks</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Plan work with priorities, due dates, goals, optional sub-tasks, and tags. Filters and search use the planner API; sub-tasks inherit their parent&apos;s goal when applicable.
+          Tap <span className="font-medium text-foreground">Filters</span> or <span className="font-medium text-foreground">New task</span> when needed. Use the + button to jump straight to creating a task.
         </p>
       </header>
 
-      <Card className="border-border/70 shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Filters</CardTitle>
-          <CardDescription>Combine status, goal, roots-only, sort, and title search.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <Card className="overflow-hidden border-border/70 shadow-sm">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/40 sm:px-5 sm:py-4 touch-manipulation"
+          onClick={() => setFiltersOpen((o) => !o)}
+          aria-expanded={filtersOpen}
+        >
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">Filters &amp; search</p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{filterSummaryLine(filterStatus, rootsOnly, search, goalIdFilter, goals.goals)}</p>
+          </div>
+          {filtersOpen ? <ChevronUp className="size-5 shrink-0 text-muted-foreground" aria-hidden /> : <ChevronDown className="size-5 shrink-0 text-muted-foreground" aria-hidden />}
+        </button>
+        {filtersOpen ? (
+          <CardContent className="grid gap-4 border-t border-border/60 pt-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field>
             <FieldLabel>Status</FieldLabel>
             <FieldContent>
@@ -286,19 +329,29 @@ export function TasksView() {
             </FieldLabel>
           </Field>
         </CardContent>
+        ) : null}
       </Card>
 
-      <Card className="border-border/70 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base">New task</CardTitle>
-          <CardDescription>Creates a task for your workspace. Link a goal or a parent task when needed.</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <Card id="task-create-anchor" className="overflow-hidden border-border/70 shadow-sm scroll-mt-24">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/40 sm:px-5 sm:py-4 touch-manipulation"
+          onClick={() => setCreateOpen((o) => !o)}
+          aria-expanded={createOpen}
+        >
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">New task</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Expand to add, or use the + button below.</p>
+          </div>
+          {createOpen ? <ChevronUp className="size-5 shrink-0 text-muted-foreground" aria-hidden /> : <ChevronDown className="size-5 shrink-0 text-muted-foreground" aria-hidden />}
+        </button>
+        {createOpen ? (
+          <CardContent className="border-t border-border/60 pt-4">
           <form onSubmit={(e) => void onCreate(e)} className="grid gap-4 lg:grid-cols-2">
             <Field className="lg:col-span-2">
-              <FieldLabel htmlFor="nt-title">Title</FieldLabel>
+              <FieldLabel htmlFor="task-new-title">Title</FieldLabel>
               <FieldContent>
-                <Input id="nt-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ship weekly report" required />
+                <Input id="task-new-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ship weekly report" required />
               </FieldContent>
             </Field>
             <Field className="lg:col-span-2">
@@ -391,16 +444,17 @@ export function TasksView() {
               </Button>
             </div>
           </form>
-        </CardContent>
+          </CardContent>
+        ) : null}
       </Card>
 
       <Card className="border-border/70 shadow-sm">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Your tasks</CardTitle>
-          <CardDescription>{tasks.length} loaded (server limit 250).</CardDescription>
+          <CardDescription>{tasks.length} shown (server limit 250).</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <ScrollArea className="h-[min(32rem,60vh)] w-full sm:h-[min(28rem,55vh)]">
+          <ScrollArea className="h-[min(42rem,70vh)] w-full sm:h-[min(38rem,65vh)]">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -576,6 +630,16 @@ export function TasksView() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Button
+        type="button"
+        size="icon"
+        className="fixed z-50 h-14 w-14 rounded-full shadow-lg touch-manipulation right-[max(1rem,env(safe-area-inset-right,0px))] bottom-[calc(max(1rem,env(safe-area-inset-bottom,0px))+3rem+0.75rem)] md:right-6 md:bottom-[calc(1.5rem+3rem+0.75rem)]"
+        aria-label="New task"
+        onClick={() => requestQuickCreate()}
+      >
+        <Plus className="size-7" aria-hidden />
+      </Button>
     </div>
   );
 }
