@@ -24,6 +24,8 @@ function main() {
   execSync(cmd("seed-finance-demo.ts"), { stdio: "inherit", cwd, env: process.env });
   console.log("\nRunning db:seed:tasks …\n");
   execSync(cmd("seed-tasks-demo.ts"), { stdio: "inherit", cwd, env: process.env });
+  console.log("\nRunning db:seed:habits-journal …\n");
+  execSync(cmd("seed-habits-journal.ts"), { stdio: "inherit", cwd, env: process.env });
   console.log("\nAll seeds finished.");
 }
 

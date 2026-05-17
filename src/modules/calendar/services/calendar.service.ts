@@ -22,3 +22,23 @@ export async function createCalendarEvent(
 export async function deleteCalendarEvent(id: string): Promise<APIEnvelope<{ ok: true }>> {
   return apiRequest<{ ok: true }>(`/planner/calendar-events/${id}`, { method: "DELETE" });
 }
+
+export async function fetchDailySummary(
+  month: string
+): Promise<APIEnvelope<Record<string, {
+  tasks: any[];
+  habits: any[];
+  journals: any[];
+  notes: any[];
+  transactions: any[];
+  events: any[];
+}>>> {
+  return apiRequest<Record<string, {
+    tasks: any[];
+    habits: any[];
+    journals: any[];
+    notes: any[];
+    transactions: any[];
+    events: any[];
+  }>>(`/planner/calendar/daily-summary${q({ month })}`);
+}

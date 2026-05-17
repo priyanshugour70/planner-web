@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   title: "Planner — goals, tasks, finance, habits, journal, notes & calendar",
   description:
     "Planner is the product: a calm workspace with dedicated modules (goals, tasks, finance, habits, journal, notes, calendar), secure auth, PostgreSQL, and REST APIs.",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
