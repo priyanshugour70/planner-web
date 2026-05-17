@@ -40,17 +40,34 @@ export const PATCH = withApiRoute(
     const name = body.name !== undefined ? body.name : existing.name;
     const description = body.description !== undefined ? body.description : existing.description;
     const color = body.color !== undefined ? body.color : existing.color;
+    const icon = body.icon !== undefined ? body.icon : existing.icon;
     const frequency = body.frequency !== undefined ? body.frequency : existing.frequency;
-    const targetPerWeek =
-      body.targetPerWeek !== undefined ? body.targetPerWeek : existing.target_per_week;
+    const targetPerWeek = body.targetPerWeek !== undefined ? body.targetPerWeek : existing.target_per_week;
+    const archived = body.archived !== undefined ? body.archived : existing.archived;
+    const reminderTime = body.reminderTime !== undefined ? body.reminderTime : existing.reminder_time;
+    const startDate = body.startDate !== undefined
+      ? body.startDate
+      : existing.start_date
+        ? existing.start_date.toISOString().slice(0, 10)
+        : null;
+    const goalId = body.goalId !== undefined
+      ? (body.goalId ? BigInt(body.goalId) : null)
+      : existing.goal_id;
+    const customDays = body.customDays !== undefined ? body.customDays : (existing.custom_days ?? []);
 
     const [row] = await sql<HabitRow[]>`
       UPDATE habits SET
         name = ${name},
         description = ${description},
         color = ${color},
+        icon = ${icon},
         frequency = ${frequency}::habit_frequency,
-        target_per_week = ${targetPerWeek}
+        target_per_week = ${targetPerWeek},
+        archived = ${archived},
+        reminder_time = ${reminderTime},
+        start_date = ${startDate},
+        goal_id = ${goalId},
+        custom_days = ${sql.array(customDays)}
       WHERE id = ${id} AND user_id = ${auth.userId}
       RETURNING *
     `;

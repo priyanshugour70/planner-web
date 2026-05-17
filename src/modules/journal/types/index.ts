@@ -1,1 +1,4 @@
-export type { JournalEntryDTO } from "@/types/planner";
+export type {
+  JournalEntryDTO,
+  JournalAnalyticsDTO,
+} from "@/types/planner";

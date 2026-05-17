@@ -6,6 +6,7 @@ import { useHabitsStore } from "@/modules/habits/stores/habits-store";
 export function useHabits() {
   useEffect(() => {
     void useHabitsStore.getState().load();
+    void useHabitsStore.getState().loadAnalytics();
   }, []);
   return useHabitsStore();
 }

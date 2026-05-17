@@ -4,7 +4,7 @@ import * as Auth from "@/modules/auth/server/auth-service";
 import { HttpError } from "@/modules/auth/server/http-error";
 import { bigIntPathId } from "@/modules/shared/server/path-ids";
 import { journalPatchSchema } from "@/modules/journal/server/schemas";
-import { serializeJournal, type JournalRow } from "@/modules/journal/server/serialize";
+import { serializeJournal, computeWordCount, type JournalRow } from "@/modules/journal/server/serialize";
 import { ErrorCodes } from "@/types/api-error";
 
 const re = /\/planner\/journal\/(\d+)\/?$/;
@@ -40,6 +40,12 @@ export const PATCH = withApiRoute(
     const entryDate =
       body.entryDate !== undefined ? body.entryDate : existing.entry_date.toISOString().slice(0, 10);
     const tags = body.tags !== undefined ? body.tags : existing.tags;
+    const isFavorite = body.isFavorite !== undefined ? body.isFavorite : existing.is_favorite;
+    const prompt = body.prompt !== undefined ? body.prompt : existing.prompt;
+    const energyLevel = body.energyLevel !== undefined ? body.energyLevel : existing.energy_level;
+    const weather = body.weather !== undefined ? body.weather : existing.weather;
+    const location = body.location !== undefined ? body.location : existing.location;
+    const wordCount = body.body !== undefined ? computeWordCount(body.body) : existing.word_count;
 
     const [row] = await sql<JournalRow[]>`
       UPDATE journal_entries SET
@@ -47,7 +53,13 @@ export const PATCH = withApiRoute(
         body = ${journalBody},
         mood = ${mood},
         entry_date = ${entryDate},
-        tags = ${sql.array(tags)}
+        tags = ${sql.array(tags)},
+        is_favorite = ${isFavorite},
+        word_count = ${wordCount},
+        prompt = ${prompt},
+        energy_level = ${energyLevel},
+        weather = ${weather},
+        location = ${location}
       WHERE id = ${id} AND user_id = ${auth.userId}
       RETURNING *
     `;

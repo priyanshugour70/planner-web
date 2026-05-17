@@ -156,8 +156,14 @@ export type HabitDTO = {
   name: string;
   description: string | null;
   color: string;
+  icon: string;
   frequency: string;
   targetPerWeek: number | null;
+  archived: boolean;
+  reminderTime: string | null;
+  startDate: string | null;
+  goalId: string | null;
+  customDays: number[];
   createdAt: string;
   updatedAt: string;
 };
@@ -171,6 +177,25 @@ export type HabitEntryDTO = {
   createdAt: string;
 };
 
+export type HabitAnalyticsDTO = {
+  habitId: string;
+  currentStreak: number;
+  longestStreak: number;
+  totalEntries: number;
+  totalCount: number;
+  completionRate: number;
+  last30Days: { date: string; count: number }[];
+};
+
+export type HabitsSummaryDTO = {
+  totalHabits: number;
+  activeHabits: number;
+  archivedHabits: number;
+  todayLogged: number;
+  totalStreaksActive: number;
+  bestCurrentStreak: number;
+};
+
 export type JournalEntryDTO = {
   id: string;
   userId: string;
@@ -179,8 +204,25 @@ export type JournalEntryDTO = {
   mood: string | null;
   entryDate: string | null;
   tags: string[];
+  isFavorite: boolean;
+  wordCount: number;
+  prompt: string | null;
+  energyLevel: number | null;
+  weather: string | null;
+  location: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type JournalAnalyticsDTO = {
+  totalEntries: number;
+  totalWords: number;
+  avgWordsPerEntry: number;
+  favoriteCount: number;
+  moodDistribution: { mood: string; count: number }[];
+  entriesPerMonth: { month: string; count: number }[];
+  currentWritingStreak: number;
+  longestWritingStreak: number;
 };
 
 export type NoteDTO = {

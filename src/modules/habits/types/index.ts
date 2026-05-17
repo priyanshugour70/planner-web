@@ -1,1 +1,6 @@
-export type { HabitDTO, HabitEntryDTO } from "@/types/planner";
+export type {
+  HabitDTO,
+  HabitEntryDTO,
+  HabitAnalyticsDTO,
+  HabitsSummaryDTO,
+} from "@/types/planner";

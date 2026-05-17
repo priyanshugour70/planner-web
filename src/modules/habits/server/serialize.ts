@@ -6,8 +6,14 @@ export interface HabitRow {
   name: string;
   description: string | null;
   color: string;
+  icon: string;
   frequency: string;
   target_per_week: number | null;
+  archived: boolean;
+  reminder_time: string | null;
+  start_date: Date | null;
+  goal_id: bigint | null;
+  custom_days: number[] | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -28,8 +34,14 @@ export function serializeHabit(r: HabitRow) {
     name: r.name,
     description: r.description,
     color: r.color,
+    icon: r.icon ?? "🎯",
     frequency: r.frequency,
     targetPerWeek: r.target_per_week,
+    archived: r.archived ?? false,
+    reminderTime: r.reminder_time ?? null,
+    startDate: isoDate(r.start_date),
+    goalId: r.goal_id != null ? String(r.goal_id) : null,
+    customDays: r.custom_days ?? [],
     createdAt: iso(r.created_at),
     updatedAt: iso(r.updated_at),
   };
