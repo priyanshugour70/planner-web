@@ -184,6 +184,8 @@ export function withApiRoute<TBody = unknown>(
       await audit({ response: res });
       return mergeCors(req, res);
     } catch (err) {
+      console.error(`[API Route Exception] [${req.method}] ${req.nextUrl.pathname}:`, err);
+      
       if (err instanceof HttpError) {
         const res = jsonError(
           requestId,
